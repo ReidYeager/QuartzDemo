@@ -15,29 +15,11 @@ public:
     // ============================================================
 
     m_mat = Quartz::CreateMaterial({
-      "D:/Dev/QuartzSandbox/Quartz/res/shaders/compiled/blank.vert.spv",
-      "D:/Dev/QuartzSandbox/Quartz/res/shaders/compiled/blank.frag.spv"
+      "D:/Dev/QuartzSandbox/res/shaders/compiled/blank.vert.spv",
+      "D:/Dev/QuartzSandbox/res/shaders/compiled/blank.frag.spv"
       });
 
-    std::vector<Quartz::Vertex> verts = {
-      {.position = {  0.5f,  0.5f, -0.5f } }, // Right, Top,    Back   0
-      {.position = {  0.5f, -0.5f, -0.5f } }, // Right, Bottom, Back   1
-      {.position = {  0.5f,  0.5f,  0.5f } }, // Right, Top,    Front  2
-      {.position = {  0.5f, -0.5f,  0.5f } }, // Right, Bottom, Front  3
-      {.position = { -0.5f,  0.5f, -0.5f } }, // Left,  Top,    Back   4
-      {.position = { -0.5f, -0.5f, -0.5f } }, // Left,  Bottom, Back   5
-      {.position = { -0.5f,  0.5f,  0.5f } }, // Left,  Top,    Front  6
-      {.position = { -0.5f, -0.5f,  0.5f } }, // Left,  Bottom, Front  7
-    };
-    std::vector<uint32_t> indices = {
-      0, 4, 6, 0, 6, 2, // Top
-      5, 1, 3, 5, 3, 7, // Bottom
-      3, 2, 6, 3, 6, 7, // Front
-      5, 4, 0, 5, 0, 1, // Back
-      7, 6, 4, 7, 4, 5, // Left
-      1, 0, 2, 1, 2, 3, // Right
-    };
-    m_mesh = Quartz::CreateMesh(verts, indices);
+    m_mesh = Quartz::CreateMesh("D:/Dev/QuartzSandbox/res/models/Shaderball.obj");
 
     // Camera
     // ============================================================
