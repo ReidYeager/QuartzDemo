@@ -1,0 +1,3 @@
+[submodule "Quartz"]
+	path = Quartz
+	url = https://github.com/ReidYeager/Quartz
