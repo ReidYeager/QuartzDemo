@@ -14,12 +14,14 @@ public:
     // Resources
     // ============================================================
 
-    m_mat = Quartz::CreateMaterial({
-      "D:/Dev/QuartzSandbox/res/shaders/compiled/blank.vert.spv",
-      "D:/Dev/QuartzSandbox/res/shaders/compiled/blank.frag.spv"
-      });
+    m_image = Quartz::CreateTexture("D:/Dev/QuartzSandbox/res/textures/AltImage.png");
 
-    m_mesh = Quartz::CreateMesh("D:/Dev/QuartzSandbox/res/models/Shaderball.obj");
+    m_mat = Quartz::CreateMaterial(
+      { "D:/Dev/QuartzSandbox/res/shaders/compiled/blank.vert.spv",
+        "D:/Dev/QuartzSandbox/res/shaders/compiled/blank.frag.spv" },
+      { { Quartz::Input_Texture, m_image } });
+
+    m_mesh = Quartz::CreateMesh("D:/Dev/QuartzSandbox/res/models/Sphere.obj");
 
     // Camera
     // ============================================================
@@ -91,7 +93,7 @@ public:
     Vec3 up = Vec3MultiplyFloat(Vec3{ 0.0f, 1.0f, 0.0f }, Quartz::Input::ButtonStatus(Quartz::Key_E) - Quartz::Input::ButtonStatus(Quartz::Key_Q));
 
     Vec3 movement = Vec3Normalize(Vec3AddVec3(Vec3AddVec3(forward, right), up));
-    movement = Vec3MultiplyFloat(movement, Quartz::time.deltaTime * (1 + (3 * Quartz::Input::ButtonStatus(Quartz::Key_Shift_L))));
+    movement = Vec3MultiplyFloat(movement, Quartz::time.deltaTime * (4 + (4 * Quartz::Input::ButtonStatus(Quartz::Key_Shift_L))));
 
     t->position = Vec3AddVec3(movement, t->position);
     //QTZ_INFO("Cam pos ({}, {}, {})", t->position.x, t->position.y, t->position.z);
@@ -114,12 +116,14 @@ public:
 
     Transform* t = m_camera.Get<Transform>();
     ImGui::Text("Camera at : (%f, %f, %f)", t->position.x, t->position.y, t->position.z);
+    ImGui::Image(m_image.ForImgui(), {64,64});
 
     ImGui::End();
   }
 
   void OnDetach() override
   {
+    m_image.Shutdown();
     m_mesh.Shutdown();
     m_mat.Shutdown();
   }
@@ -150,6 +154,7 @@ private:
   std::vector<Quartz::Entity> m_entities;
   Quartz::Material m_mat {};
   Quartz::Mesh m_mesh {};
+  Quartz::Texture m_image {};
 };
 
 QUARTZ_GAME_LAYER(GameLayer)
