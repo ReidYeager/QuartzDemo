@@ -4,6 +4,12 @@
 
 #include <diamond.h>
 
+struct TestBufferInfo
+{
+  int x;
+  float y;
+};
+
 class GameLayer : public Quartz::Layer
 {
 public:
@@ -14,14 +20,21 @@ public:
     // Resources
     // ============================================================
 
+    TestBufferInfo tbi = { 10, -43.11f };
+
+    m_buffer = Quartz::CreateBuffer(sizeof(TestBufferInfo));
+    m_buffer.PushData(&tbi);
+
     m_image = Quartz::CreateTexture("D:/Dev/QuartzSandbox/res/textures/AltImage.png");
 
     m_mat = Quartz::CreateMaterial(
-      { "D:/Dev/QuartzSandbox/res/shaders/compiled/blank.vert.spv",
-        "D:/Dev/QuartzSandbox/res/shaders/compiled/blank.frag.spv" },
-      { { Quartz::Input_Texture, m_image } });
+      { "D:/Dev/QuartzSandbox/res/shaders/compiled/0_blank.vert.spv",
+        "D:/Dev/QuartzSandbox/res/shaders/compiled/1_lights.frag.spv" },
+      { {.type = Quartz::Input_Texture, .texture = m_image },
+        {.type = Quartz::Input_Buffer, .buffer = m_buffer } }
+      );
 
-    m_mesh = Quartz::CreateMesh("D:/Dev/QuartzSandbox/res/models/Sphere.obj");
+    m_mesh = Quartz::CreateMesh("D:/Dev/QuartzSandbox/res/models/Cube.obj");
 
     // Camera
     // ============================================================
@@ -65,6 +78,29 @@ public:
       r->material = &m_mat;
       r->mesh = &m_mesh;
     }
+
+    // Lights
+    // ============================================================
+
+    // Directional
+    ld = m_lightDir.Add<Quartz::LightDirectional>();
+    ld->color = Vec3{ 0.0f, 0.0f, 0.0f };
+    ld->direction = Vec3{ 0.0f, -1.0f, 0.0f };
+
+    // Point
+    lp = m_lightPoint.Add<Quartz::LightPoint>();
+    lp->color = Vec3{ 1.0f, 1.0f, 1.0f };
+    lp->position = Vec3{ 0.0f, 1.25f, 1.3f };
+    lp->linear = 0.09f;
+    lp->quadratic = 0.032f;
+
+    // Spot
+    ls = m_lightSpot.Add<Quartz::LightSpot>();
+    ls->color = Vec3{ 1.0f, 1.0f, 1.0f };
+    ls->position = Vec3{ 0.0f, 0.0f, 0.0f };
+    ls->direction = Vec3{ 0.0f, -1.0f, 0.0f };
+    ls->inner = 1.05f;
+    ls->outer = 0.9f;
   }
 
   void OnUpdate() override
@@ -100,29 +136,58 @@ public:
 
     // Update cubes
     // ============================================================
-    for (uint32_t i = 0; i < 4; i++)
-    {
-      Transform* r = m_entities[i].Get<Transform>();
-      r->rotation.y += Quartz::time.deltaTime * 30.0f * (i + 1);
-      r->rotation.x += Quartz::time.deltaTime * 30.0f * (i + 1);
-      r->rotation.z += Quartz::time.deltaTime * 30.0f * (i + 1);
-      r->position.x = sin(Quartz::time.totalTimeDeltaSum / (i + 1)) * i * 3;
-    }
+    //for (uint32_t i = 0; i < 4; i++)
+    //{
+    //  Transform* r = m_entities[i].Get<Transform>();
+    //  r->rotation.y += Quartz::time.deltaTime * 30.0f * (i + 1);
+    //  r->rotation.x += Quartz::time.deltaTime * 30.0f * (i + 1);
+    //  r->rotation.z += Quartz::time.deltaTime * 30.0f * (i + 1);
+    //  r->position.x = sin(Quartz::time.totalTimeDeltaSum / (i + 1)) * i * 3;
+    //}
   }
 
   void OnUpdateImgui() override
   {
-    ImGui::Begin("Test game thing");
+    ImGui::Begin("Game");
 
     Transform* t = m_camera.Get<Transform>();
-    ImGui::Text("Camera at : (%f, %f, %f)", t->position.x, t->position.y, t->position.z);
-    ImGui::Image(m_image.ForImgui(), {64,64});
+    ls->position = t->position;
+    ls->direction = QuaternionMultiplyVec3(QuaternionFromEuler(t->rotation), Vec3{ 0.0f, 0.0f, 1.0f });
+
+    Vec3 p = t->position;
+    ImGui::Text("Cam : %f, %f, %f", p.x, p.y, p.z);
+
+    ImGui::SeparatorText("Directional");
+    ImGui::PushID("Dir");
+    ImGui::DragFloat3("Color", (float*)&ld->color, 0.01f);
+    ImGui::DragFloat3("Direction", (float*)&ld->direction, 0.01f);
+    ImGui::PopID();
+
+    ImGui::SeparatorText("Point");
+    ImGui::PushID("Point");
+    ImGui::DragFloat3("Color", (float*)&lp->color, 0.01f);
+    ImGui::DragFloat3("Position", (float*)&lp->position, 0.01f);
+    ImGui::DragFloat("Linear", (float*)&lp->linear, 0.01f);
+    ImGui::DragFloat("Quadratic", (float*)&lp->quadratic, 0.01f);
+    ImGui::PopID();
+
+    ImGui::SeparatorText("Spot");
+    ImGui::PushID("Spot");
+    ImGui::DragFloat3("Color", (float*)&ls->color, 0.01f);
+    ImGui::DragFloat3("Position", (float*)&ls->position, 0.01f);
+    ImGui::DragFloat3("Direction", (float*)&ls->direction, 0.01f);
+    ImGui::DragFloat("Inner", (float*)&ls->inner, 0.01f);
+    ImGui::DragFloat("Outer", (float*)&ls->outer, 0.01f);
+    ImGui::DragFloat("Linear", (float*)&ls->linear, 0.01f);
+    ImGui::DragFloat("Quadratic", (float*)&ls->quadratic, 0.01f);
+    ImGui::PopID();
 
     ImGui::End();
   }
 
   void OnDetach() override
   {
+    m_buffer.Shutdown();
     m_image.Shutdown();
     m_mesh.Shutdown();
     m_mat.Shutdown();
@@ -155,6 +220,14 @@ private:
   Quartz::Material m_mat {};
   Quartz::Mesh m_mesh {};
   Quartz::Texture m_image {};
+  Quartz::Buffer m_buffer {};
+
+  Quartz::Entity m_lightDir;
+  Quartz::Entity m_lightPoint;
+  Quartz::Entity m_lightSpot;
+  Quartz::LightSpot* ls;
+  Quartz::LightPoint* lp;
+  Quartz::LightDirectional* ld;
 };
 
 QUARTZ_GAME_LAYER(GameLayer)

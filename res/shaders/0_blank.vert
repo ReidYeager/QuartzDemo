@@ -22,7 +22,10 @@ void main()
 {
     vec4 worldPosition = pushConst.objectTransform * vec4(inPosition, 1.0);
     gl_Position = scene.viewProj * worldPosition;
+    
     outPosition = worldPosition.xyz;
     outUv = inUv;
-    outNormal = inNormal;
+
+    mat3 normalMatrix = mat3(transpose(inverse(pushConst.objectTransform)));
+    outNormal = normalMatrix * inNormal;
 }
