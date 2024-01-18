@@ -25,16 +25,19 @@ public:
     m_buffer = Quartz::CreateBuffer(sizeof(TestBufferInfo));
     m_buffer.PushData(&tbi);
 
-    m_image = Quartz::CreateTexture("D:/Dev/QuartzSandbox/res/textures/AltImage.png");
+    texAlbedo = Quartz::CreateTexture("D:/Dev/QuartzSandbox/res/textures/CyborgWeapon/Weapon_albedo.png");
+    //texNormal = Quartz::CreateTexture("D:/Dev/QuartzSandbox/res/textures/CyborgWeapon/Weapon_normal.png");
+    texNormal = Quartz::CreateTexture("D:/Dev/QuartzSandbox/res/textures/TestNormal.png");
+    texMaps = Quartz::CreateTexture("D:/Dev/QuartzSandbox/res/textures/CyborgWeapon/Weapon_AoRoughnessMetallic.png");
 
     m_mat = Quartz::CreateMaterial(
       { "D:/Dev/QuartzSandbox/res/shaders/compiled/0_blank.vert.spv",
-        "D:/Dev/QuartzSandbox/res/shaders/compiled/1_lights.frag.spv" },
-      { {.type = Quartz::Input_Texture, .texture = m_image },
+        "D:/Dev/QuartzSandbox/res/shaders/compiled/2_normal.frag.spv" },
+      { {.type = Quartz::Input_Texture, .texture = texNormal },
         {.type = Quartz::Input_Buffer, .buffer = m_buffer } }
       );
 
-    m_mesh = Quartz::CreateMesh("D:/Dev/QuartzSandbox/res/models/Cube.obj");
+    m_mesh = Quartz::CreateMesh("D:/Dev/QuartzSandbox/res/models/SphereSmooth.obj");
 
     // Camera
     // ============================================================
@@ -187,8 +190,10 @@ public:
 
   void OnDetach() override
   {
+    texAlbedo.Shutdown();
+    texNormal.Shutdown();
+    texMaps.Shutdown();
     m_buffer.Shutdown();
-    m_image.Shutdown();
     m_mesh.Shutdown();
     m_mat.Shutdown();
   }
@@ -219,7 +224,6 @@ private:
   std::vector<Quartz::Entity> m_entities;
   Quartz::Material m_mat {};
   Quartz::Mesh m_mesh {};
-  Quartz::Texture m_image {};
   Quartz::Buffer m_buffer {};
 
   Quartz::Entity m_lightDir;
@@ -228,6 +232,10 @@ private:
   Quartz::LightSpot* ls;
   Quartz::LightPoint* lp;
   Quartz::LightDirectional* ld;
+
+  Quartz::Texture texAlbedo;
+  Quartz::Texture texNormal;
+  Quartz::Texture texMaps;
 };
 
 QUARTZ_GAME_LAYER(GameLayer)
