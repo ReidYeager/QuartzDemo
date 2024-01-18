@@ -32,7 +32,6 @@ void main()
     mat3 normalMatrix = mat3(transpose(inverse(pushConst.objectTransform)));
     outNormal = normalize(normalMatrix * inNormal);
     outTangent = normalize(normalMatrix * inTangent);
-    outTangent = normalize(outTangent - dot(outTangent, outNormal) * outNormal);
-    vec3 bitan = cross(outNormal, outTangent);
+    vec3 bitan = normalize(cross(outNormal, outTangent));
     outTBN = mat3(outTangent, bitan, outNormal);
 }

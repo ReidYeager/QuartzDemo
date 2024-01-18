@@ -25,19 +25,31 @@ public:
     m_buffer = Quartz::CreateBuffer(sizeof(TestBufferInfo));
     m_buffer.PushData(&tbi);
 
+    lightBuffer = Quartz::CreateBuffer(sizeof(Vec3));
+
     texAlbedo = Quartz::CreateTexture("D:/Dev/QuartzSandbox/res/textures/CyborgWeapon/Weapon_albedo.png");
-    //texNormal = Quartz::CreateTexture("D:/Dev/QuartzSandbox/res/textures/CyborgWeapon/Weapon_normal.png");
-    texNormal = Quartz::CreateTexture("D:/Dev/QuartzSandbox/res/textures/TestNormal.png");
+    texNormal = Quartz::CreateTexture("D:/Dev/QuartzSandbox/res/textures/CyborgWeapon/Weapon_normal.png");
+    //texNormal = Quartz::CreateTexture("D:/Dev/QuartzSandbox/res/textures/TestNormal.png");
     texMaps = Quartz::CreateTexture("D:/Dev/QuartzSandbox/res/textures/CyborgWeapon/Weapon_AoRoughnessMetallic.png");
 
     m_mat = Quartz::CreateMaterial(
       { "D:/Dev/QuartzSandbox/res/shaders/compiled/0_blank.vert.spv",
+        //"D:/Dev/QuartzSandbox/res/shaders/compiled/1_lights.frag.spv" },
         "D:/Dev/QuartzSandbox/res/shaders/compiled/2_normal.frag.spv" },
       { {.type = Quartz::Input_Texture, .texture = texNormal },
         {.type = Quartz::Input_Buffer, .buffer = m_buffer } }
       );
 
-    m_mesh = Quartz::CreateMesh("D:/Dev/QuartzSandbox/res/models/SphereSmooth.obj");
+    pointLightMat = Quartz::CreateMaterial(
+      { "D:/Dev/QuartzSandbox/res/shaders/compiled/0_blank.vert.spv",
+        "D:/Dev/QuartzSandbox/res/shaders/compiled/x_light.frag.spv" },
+      { {.type = Quartz::Input_Buffer, .buffer = lightBuffer } }
+    );
+
+    m_mesh = Quartz::CreateMesh("D:/Dev/QuartzSandbox/res/models/Cyborg_Weapon.obj");
+    //m_mesh = Quartz::CreateMesh("D:/Dev/QuartzSandbox/res/models/BadCactus.obj");
+
+    lightMesh = Quartz::CreateMesh("D:/Dev/QuartzSandbox/res/models/SphereSmooth.obj");
 
     // Camera
     // ============================================================
@@ -91,15 +103,23 @@ public:
     ld->direction = Vec3{ 0.0f, -1.0f, 0.0f };
 
     // Point
+    Quartz::Renderable* pointRender = m_lightPoint.Add<Quartz::Renderable>();
+    pointRender->material = &pointLightMat;
+    pointRender->mesh = &lightMesh;
+
     lp = m_lightPoint.Add<Quartz::LightPoint>();
     lp->color = Vec3{ 1.0f, 1.0f, 1.0f };
     lp->position = Vec3{ 0.0f, 1.25f, 1.3f };
     lp->linear = 0.09f;
     lp->quadratic = 0.032f;
+    lightBuffer.PushData(&lp->color);
+
+    *m_lightPoint.Get<Transform>() = transformIdentity;
+    m_lightPoint.Get<Transform>()->scale = Vec3{ 0.1f, 0.1f, 0.1f };
 
     // Spot
     ls = m_lightSpot.Add<Quartz::LightSpot>();
-    ls->color = Vec3{ 1.0f, 1.0f, 1.0f };
+    ls->color = Vec3{ 0.0f, 0.0f, 0.0f };
     ls->position = Vec3{ 0.0f, 0.0f, 0.0f };
     ls->direction = Vec3{ 0.0f, -1.0f, 0.0f };
     ls->inner = 1.05f;
@@ -174,6 +194,8 @@ public:
     ImGui::DragFloat("Quadratic", (float*)&lp->quadratic, 0.01f);
     ImGui::PopID();
 
+    m_lightPoint.Get<Transform>()->position = lp->position;
+
     ImGui::SeparatorText("Spot");
     ImGui::PushID("Spot");
     ImGui::DragFloat3("Color", (float*)&ls->color, 0.01f);
@@ -190,6 +212,9 @@ public:
 
   void OnDetach() override
   {
+    lightMesh.Shutdown();
+    pointLightMat.Shutdown();
+    lightBuffer.Shutdown();
     texAlbedo.Shutdown();
     texNormal.Shutdown();
     texMaps.Shutdown();
@@ -225,6 +250,10 @@ private:
   Quartz::Material m_mat {};
   Quartz::Mesh m_mesh {};
   Quartz::Buffer m_buffer {};
+
+  Quartz::Mesh lightMesh{};
+  Quartz::Material pointLightMat {};
+  Quartz::Buffer lightBuffer {};
 
   Quartz::Entity m_lightDir;
   Quartz::Entity m_lightPoint;
