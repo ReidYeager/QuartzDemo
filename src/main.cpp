@@ -14,30 +14,38 @@ class GameLayer : public Quartz::Layer
 {
 public:
   GameLayer() : Layer("Game layer") {}
+  struct PbrMatValues
+  {
+    float roughness;
+    float metalness;
+    Vec2 padding;
+    Vec3 baseReflectivity;
+  } pbrValues;
 
   void OnAttach() override
   {
     // Resources
     // ============================================================
 
-    TestBufferInfo tbi = { 10, -43.11f };
-
-    m_buffer = Quartz::CreateBuffer(sizeof(TestBufferInfo));
-    m_buffer.PushData(&tbi);
-
     lightBuffer = Quartz::CreateBuffer(sizeof(Vec3));
+    pbrBuffer = Quartz::CreateBuffer(sizeof(pbrValues));
+
+    pbrValues.roughness = 0.5f;
+    pbrValues.metalness = 0.0f;
+    pbrValues.baseReflectivity = { 0.04f, 0.04f, 0.04f };
+    pbrBuffer.PushData(&pbrValues);
 
     texAlbedo = Quartz::CreateTexture("D:/Dev/QuartzSandbox/res/textures/CyborgWeapon/Weapon_albedo.png");
     texNormal = Quartz::CreateTexture("D:/Dev/QuartzSandbox/res/textures/CyborgWeapon/Weapon_normal.png");
-    //texNormal = Quartz::CreateTexture("D:/Dev/QuartzSandbox/res/textures/TestNormal.png");
     texMaps = Quartz::CreateTexture("D:/Dev/QuartzSandbox/res/textures/CyborgWeapon/Weapon_AoRoughnessMetallic.png");
 
     m_mat = Quartz::CreateMaterial(
       { "D:/Dev/QuartzSandbox/res/shaders/compiled/0_blank.vert.spv",
-        //"D:/Dev/QuartzSandbox/res/shaders/compiled/1_lights.frag.spv" },
-        "D:/Dev/QuartzSandbox/res/shaders/compiled/2_normal.frag.spv" },
-      { {.type = Quartz::Input_Texture, .texture = texNormal },
-        {.type = Quartz::Input_Buffer, .buffer = m_buffer } }
+        "D:/Dev/QuartzSandbox/res/shaders/compiled/3_pbr.frag.spv" },
+      { {.type = Quartz::Input_Texture, .texture = texAlbedo },
+        {.type = Quartz::Input_Texture, .texture = texNormal },
+        {.type = Quartz::Input_Texture, .texture = texMaps },
+        {.type = Quartz::Input_Buffer, .buffer = pbrBuffer } }
       );
 
     pointLightMat = Quartz::CreateMaterial(
@@ -112,6 +120,7 @@ public:
     lp->position = Vec3{ 0.0f, 1.25f, 1.3f };
     lp->linear = 0.09f;
     lp->quadratic = 0.032f;
+    prevPointColor = lp->color;
     lightBuffer.PushData(&lp->color);
 
     *m_lightPoint.Get<Transform>() = transformIdentity;
@@ -139,6 +148,11 @@ public:
       Vec2I mouseMove = Quartz::Input::GetMouseDelta();
       t->rotation.x += mouseMove.y * m_cameraSensitivity;
       t->rotation.y += mouseMove.x * m_cameraSensitivity;
+    }
+
+    if (Quartz::Input::OnButtonPress(Quartz::Key_R) || Quartz::Input::OnButtonPress(Quartz::Mouse_Middle))
+    {
+      m_mat.Reload();
     }
 
     // Cam movement
@@ -169,6 +183,7 @@ public:
     //}
   }
 
+  Vec3 prevPointColor;
   void OnUpdateImgui() override
   {
     ImGui::Begin("Game");
@@ -180,11 +195,19 @@ public:
     Vec3 p = t->position;
     ImGui::Text("Cam : %f, %f, %f", p.x, p.y, p.z);
 
-    ImGui::SeparatorText("Directional");
-    ImGui::PushID("Dir");
-    ImGui::DragFloat3("Color", (float*)&ld->color, 0.01f);
-    ImGui::DragFloat3("Direction", (float*)&ld->direction, 0.01f);
+    ImGui::SeparatorText("PBR");
+    ImGui::PushID("PBR");
+    ImGui::DragFloat("Roughness", &pbrValues.roughness, 0.01f);
+    ImGui::DragFloat("Metalness", &pbrValues.metalness, 0.01f);
+    ImGui::DragFloat3("Base reflectivity", (float*)&pbrValues.baseReflectivity, 0.01f);
     ImGui::PopID();
+    pbrBuffer.PushData(&pbrValues);
+
+    //ImGui::SeparatorText("Directional");
+    //ImGui::PushID("Dir");
+    //ImGui::DragFloat3("Color", (float*)&ld->color, 0.01f);
+    //ImGui::DragFloat3("Direction", (float*)&ld->direction, 0.01f);
+    //ImGui::PopID();
 
     ImGui::SeparatorText("Point");
     ImGui::PushID("Point");
@@ -195,30 +218,35 @@ public:
     ImGui::PopID();
 
     m_lightPoint.Get<Transform>()->position = lp->position;
+    if (!Vec3Compare(prevPointColor, lp->color))
+    {
+      lightBuffer.PushData(&lp->color);
+      prevPointColor = lp->color;
+    }
 
-    ImGui::SeparatorText("Spot");
-    ImGui::PushID("Spot");
-    ImGui::DragFloat3("Color", (float*)&ls->color, 0.01f);
-    ImGui::DragFloat3("Position", (float*)&ls->position, 0.01f);
-    ImGui::DragFloat3("Direction", (float*)&ls->direction, 0.01f);
-    ImGui::DragFloat("Inner", (float*)&ls->inner, 0.01f);
-    ImGui::DragFloat("Outer", (float*)&ls->outer, 0.01f);
-    ImGui::DragFloat("Linear", (float*)&ls->linear, 0.01f);
-    ImGui::DragFloat("Quadratic", (float*)&ls->quadratic, 0.01f);
-    ImGui::PopID();
+    //ImGui::SeparatorText("Spot");
+    //ImGui::PushID("Spot");
+    //ImGui::DragFloat3("Color", (float*)&ls->color, 0.01f);
+    //ImGui::DragFloat3("Position", (float*)&ls->position, 0.01f);
+    //ImGui::DragFloat3("Direction", (float*)&ls->direction, 0.01f);
+    //ImGui::DragFloat("Inner", (float*)&ls->inner, 0.01f);
+    //ImGui::DragFloat("Outer", (float*)&ls->outer, 0.01f);
+    //ImGui::DragFloat("Linear", (float*)&ls->linear, 0.01f);
+    //ImGui::DragFloat("Quadratic", (float*)&ls->quadratic, 0.01f);
+    //ImGui::PopID();
 
     ImGui::End();
   }
 
   void OnDetach() override
   {
+    pbrBuffer.Shutdown();
     lightMesh.Shutdown();
     pointLightMat.Shutdown();
     lightBuffer.Shutdown();
     texAlbedo.Shutdown();
     texNormal.Shutdown();
     texMaps.Shutdown();
-    m_buffer.Shutdown();
     m_mesh.Shutdown();
     m_mat.Shutdown();
   }
@@ -247,9 +275,9 @@ private:
   std::vector<Quartz::Renderable*> renderables;
   Quartz::Entity m_camera;
   std::vector<Quartz::Entity> m_entities;
+  Quartz::Buffer pbrBuffer;
   Quartz::Material m_mat {};
   Quartz::Mesh m_mesh {};
-  Quartz::Buffer m_buffer {};
 
   Quartz::Mesh lightMesh{};
   Quartz::Material pointLightMat {};
