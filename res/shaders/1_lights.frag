@@ -39,7 +39,13 @@ layout(set = 0, binding = 0) uniform SceneStruct
     LightSpot lightSpot[2];
 } scene;
 
-layout (set = 1, binding = 0) uniform sampler2D inTex;
+layout (set = 1, binding = 0) uniform MaterialStruct
+{
+    vec3 baseReflectivity;
+    float roughness;
+    float metalness;
+} mat;
+// layout (set = 1, binding = 1) uniform sampler2D tex;
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec2 inUv;
@@ -104,5 +110,5 @@ void main()
     light += CalculatePointLight(0);
     light += CalculateSpotLight(0);
 
-    outColor = vec4(light, 1.0);
+    outColor = vec4(light * vec3(mat.roughness / 5.0, mat.metalness / 5.0, 0.0), 1.0);
 }
