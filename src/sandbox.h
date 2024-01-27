@@ -11,7 +11,8 @@ private:
 
   Quartz::Mesh objectMesh;
 
-  static const uint32_t objectCount = 25;
+  static const uint32_t axisCount = 7;
+  static const uint32_t objectCount = axisCount * axisCount;
   Quartz::Entity objects[objectCount] = {};
 
   // Pbr

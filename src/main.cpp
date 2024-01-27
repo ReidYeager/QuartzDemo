@@ -12,9 +12,12 @@ QuartzResult Sandbox::Init()
   // Pbr
   // ============================================================
 
-  QTZ_ATTEMPT(pbrTextures.albedo.Init("D:/Dev/QuartzSandbox/res/textures/CyborgWeapon/Weapon_albedo.png"));
-  QTZ_ATTEMPT(pbrTextures.normal.Init("D:/Dev/QuartzSandbox/res/textures/CyborgWeapon/Weapon_normal.png"));
-  QTZ_ATTEMPT(pbrTextures.maps.Init("D:/Dev/QuartzSandbox/res/textures/CyborgWeapon/Weapon_AoRoughnessMetallic.png"));
+  //QTZ_ATTEMPT(pbrTextures.albedo.Init("D:/Dev/QuartzSandbox/res/textures/CyborgWeapon/Weapon_albedo.png"));
+  //QTZ_ATTEMPT(pbrTextures.normal.Init("D:/Dev/QuartzSandbox/res/textures/CyborgWeapon/Weapon_normal.png"));
+  //QTZ_ATTEMPT(pbrTextures.maps.Init("D:/Dev/QuartzSandbox/res/textures/CyborgWeapon/Weapon_AoRoughnessMetallic.png"));
+  QTZ_ATTEMPT(pbrTextures.albedo.Init("D:/Dev/QuartzSandbox/res/textures/PixelWhite.png"));
+  QTZ_ATTEMPT(pbrTextures.normal.Init("D:/Dev/QuartzSandbox/res/textures/TestNormal.png"));
+  QTZ_ATTEMPT(pbrTextures.maps.Init("D:/Dev/QuartzSandbox/res/textures/PixelWhite.png"));
 
   QTZ_ATTEMPT(
     pbrMaterial.Init(
@@ -22,9 +25,9 @@ QuartzResult Sandbox::Init()
         "D:/Dev/QuartzSandbox/res/shaders/compiled/3_pbr.frag.spv" },
         //"D:/Dev/QuartzSandbox/res/shaders/compiled/t_bufferalignment.frag.spv" },
       { {.type = Quartz::Input_Buffer,  .value = { .buffer  = dummyBuffer        } },
-        {.type = Quartz::Input_Texture, .value = { .texture = pbrTextures.albedo } },
-        {.type = Quartz::Input_Texture, .value = { .texture = pbrTextures.normal } },
-        {.type = Quartz::Input_Texture, .value = { .texture = pbrTextures.maps   } }
+        //{.type = Quartz::Input_Texture, .value = { .texture = pbrTextures.albedo } },
+        //{.type = Quartz::Input_Texture, .value = { .texture = pbrTextures.normal } },
+        //{.type = Quartz::Input_Texture, .value = { .texture = pbrTextures.maps   } }
       })
     );
 
@@ -42,6 +45,7 @@ QuartzResult Sandbox::Init()
 
   dirLightPtr = dirLight.Add<Quartz::LightDirectional>();
   dirLightPtr->color = Vec3{ 1.0f, 1.0f, 1.0f };
+  dirLightPtr->intensity = 0.0f;
   dirLightPtr->direction = Vec3{ 0.0f, -1.0f, 0.0f };
 
   // Point ==========
@@ -65,13 +69,12 @@ QuartzResult Sandbox::Init()
   {
     pointLightPtr[i] = pointLights[i].Get<Quartz::LightPoint>();
     pointLightPtr[i]->color = colors[i];
-    pointLightPtr[i]->linear = 0.0f;
-    pointLightPtr[i]->quadratic = 0.0f;
+    pointLightPtr[i]->intensity = 2.0f;
     lightbulbBuffers[i].PushData(&pointLightPtr[i]->color);
 
     lightbulbTransforms[i] = pointLights[i].Get<Transform>();
     lightbulbTransforms[i]->scale = Vec3{ 0.1f, 0.1f, 0.1f };
-    lightbulbTransforms[i]->position = Vec3{ (float)(i % 2), (float)(i / 2), 1.0f};
+    lightbulbTransforms[i]->position = Vec3{ (float)(i % 2) * 2.0f - 1.0f, (float)(i / 2) * 2.0f - 1.0f, 1.5f};
   }
 
   // Spot ==========
@@ -89,12 +92,12 @@ QuartzResult Sandbox::Init()
   {
     uint32_t bulbIndex = i + pointLightCount;
     spotLightPtr[i] = spotLights[i].Get<Quartz::LightSpot>();
-    spotLightPtr[i]->color = Vec3SubtractVec3(Vec3{ 1.0f, 1.0f, 1.0f }, colors[i]);
+    //spotLightPtr[i]->color = Vec4SubtractVec4(Vec4{ 1.0f, 1.0f, 1.0f, 1.0f }, colors[i]);
+    spotLightPtr[i]->color = colors[i];
+    spotLightPtr[i]->intensity = 0.0f;
     spotLightPtr[i]->direction = Vec3{ 0.0f, 0.0f, 1.0f };
-    spotLightPtr[i]->linear = 0.0f;
-    spotLightPtr[i]->quadratic = 0.0f;
-    spotLightPtr[i]->inner = cos(PERI_DEGREES_TO_RADIANS(45.0f));
-    spotLightPtr[i]->outer = cos(PERI_DEGREES_TO_RADIANS(80.0f));
+    spotLightPtr[i]->inner = cos(PERI_DEGREES_TO_RADIANS(5.0f * i));
+    spotLightPtr[i]->outer = cos(PERI_DEGREES_TO_RADIANS(10.0f * i));
     lightbulbBuffers[bulbIndex].PushData(&spotLightPtr[i]->color);
 
     lightbulbTransforms[bulbIndex] = spotLights[i].Get<Transform>();
@@ -110,8 +113,8 @@ QuartzResult Sandbox::Init()
 
   for (uint32_t i = 0; i < objectCount; i++)
   {
-    float y = (float)(i / 5);
-    float x = (float)(i % 5);
+    float y = (float)(i / axisCount);
+    float x = (float)(i % axisCount);
 
     Quartz::Entity& e = objects[i];
 
@@ -122,26 +125,43 @@ QuartzResult Sandbox::Init()
     pbrBuffers[i].Init(sizeof(PbrBufferInfo));
     pbrInstances[i].Init(
       pbrMaterial,
-      { { .buffer  = pbrBuffers[i]      },
-        { .texture = pbrTextures.albedo },
-        { .texture = pbrTextures.normal },
-        { .texture = pbrTextures.maps   }
+      {
+        { .buffer  = pbrBuffers[i]      },
+        //{ .texture = pbrTextures.albedo },
+        //{ .texture = pbrTextures.normal },
+        //{ .texture = pbrTextures.maps   }
       });
 
     pbrBufferData[i].baseReflectivity = Vec3{ 0.56f, 0.57f, 0.58f };
-    pbrBufferData[i].roughness = x / 5.0f + 0.1f;
-    pbrBufferData[i].metalness = y / 5.0f + 0.1f;
+    pbrBufferData[i].roughness = (float)x / axisCount + 0.1f;
+    pbrBufferData[i].metalness = (float)y / axisCount + 0.1f;
     pbrBuffers[i].PushData(&pbrBufferData[i]);
 
     *e.Add<Quartz::Renderable>() = Quartz::Renderable{ .mesh = &objectMesh, .material = &pbrInstances[i] };
   }
+
+  //pbrBuffers[0].Init(sizeof(PbrBufferInfo));
+  //pbrInstances[0].Init(
+  //  pbrMaterial,
+  //  {
+  //    {.buffer = pbrBuffers[0] },
+  //    { .texture = pbrTextures.albedo },
+  //    { .texture = pbrTextures.normal },
+  //    { .texture = pbrTextures.maps   }
+  //  });
+  //pbrBufferData[0].baseReflectivity = Vec3{ 0.56f, 0.57f, 0.58f };
+  //pbrBuffers[0].PushData(&pbrBufferData[0]);
+
+  //Quartz::Renderable* r = objects[0].Add<Quartz::Renderable>();
+  //r->material = &pbrMaterial;
+  //r->mesh = &objectMesh;
 
   // Camera
   // ============================================================
 
   camera.Get<Transform>()->position.z = 3.0f;
   Quartz::Camera* c = camera.Add<Quartz::Camera>();
-  *c = Quartz::Camera{ .fov = 90.0f, .desiredRatio = 1.0f, .nearClip = 0.1f, .farClip = 100.0f };
+  *c = Quartz::Camera{ .fov = 65.0f, .desiredRatio = 1.0f, .nearClip = 0.1f, .farClip = 100.0f };
   float windowRatio = (float)Quartz::WindowWidth() / (float)Quartz::WindowHeight();
   c->projectionMatrix = ProjectionPerspectiveExtended(windowRatio, c->desiredRatio, c->fov, c->nearClip, c->farClip);
 
@@ -195,6 +215,15 @@ QuartzResult Sandbox::Update(double deltaTime)
   Vec3 direction = Vec3Normalize(Vec3AddVec3(Vec3AddVec3(camFwd, camRit), camUp));
   camTrans->position = Vec3AddVec3(camTrans->position, Vec3MultiplyFloat(direction, deltaTime * speed));
 
+  for (uint32_t i = 0; i < spotLightCount; i++)
+  {
+    Transform* t = spotLights[i].Get<Transform>();
+    t->position = camTrans->position;
+
+    Quaternion rot = QuaternionFromEuler(camTrans->rotation);
+    spotLights[i].Get<Quartz::LightSpot>()->direction = QuaternionMultiplyVec3(rot, Vec3{ 0.0f, 0.0f, 1.0f });
+  }
+
   return Quartz_Success;
 }
 
@@ -232,8 +261,9 @@ void Sandbox::RenderImgui()
   ImGui::SeparatorText("Directional light");
   ImGui::PushID("DirectionalLight");
 
-  ImGui::DragFloat3("Color", (float*)&dirLightPtr->color);
-  ImGui::DragFloat3("Direction", (float*)&dirLightPtr->direction);
+  ImGui::DragFloat3("Color", (float*)&dirLightPtr->color, 0.001f);
+  ImGui::DragFloat("Intensity", &dirLightPtr->intensity, 0.001f);
+  ImGui::DragFloat3("Direction", (float*)&dirLightPtr->direction, 0.001f);
   dirLightPtr->direction = Vec3Normalize(dirLightPtr->direction);
 
   ImGui::PopID();
@@ -252,9 +282,8 @@ void Sandbox::RenderImgui()
     ImGui::SeparatorText(buffer);
 
     ImGui::DragFloat3("Color", (float*)&ptr->color, 0.001f);
+    ImGui::DragFloat("Intensity", &ptr->intensity, 0.001f);
     ImGui::DragFloat3("Position", (float*)&lightbulbTransforms[i]->position, 0.01f);
-    ImGui::DragFloat("Linear", &ptr->linear, 0.001f);
-    ImGui::DragFloat("Quadratic", &ptr->quadratic, 0.001f);
 
     ptr->position = lightbulbTransforms[i]->position;
     lightbulbBuffers[i].PushData(&ptr->color);
@@ -278,10 +307,9 @@ void Sandbox::RenderImgui()
     ImGui::SeparatorText(buffer);
 
     ImGui::DragFloat3("Color", (float*)&ptr->color, 0.001f);
+    ImGui::DragFloat("Intensity", &ptr->intensity, 0.001f);
     ImGui::DragFloat3("Position", (float*)&lightbulbTransforms[bulbIndex]->position, 0.01f);
     ImGui::DragFloat3("Direction", (float*)&ptr->direction, 0.01f);
-    ImGui::DragFloat("Linear", &ptr->linear, 0.001f);
-    ImGui::DragFloat("Quadratic", &ptr->quadratic, 0.001f);
     ImGui::DragFloat("Inner", &ptr->inner, 0.001f);
     ImGui::DragFloat("Outer", &ptr->outer, 0.001f);
 

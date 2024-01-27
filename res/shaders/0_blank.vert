@@ -33,5 +33,5 @@ void main()
     outNormal = normalize(normalMatrix * inNormal);
     outTangent = normalize(normalMatrix * inTangent);
     vec3 bitan = normalize(cross(outNormal, outTangent));
-    outTBN = mat3(outTangent, bitan, outNormal);
+    outTBN = transpose(mat3(outTangent, bitan, outNormal));
 }

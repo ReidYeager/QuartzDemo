@@ -2,30 +2,24 @@
 
 struct LightDirectional
 {
-    vec3 color;
+    vec4 color;
     vec3 direction;
 };
 
 struct LightPoint
 {
-    vec3 color;
+    vec4 color;
     vec3 position;
-
-    float linear;
-    float quadratic;
 };
 
 struct LightSpot
 {
-    vec3 color;
+    vec4 color;
     vec3 position;
     vec3 direction;
 
     float cosInner;
     float cosOuter;
-
-    float linear;
-    float quadratic;
 };
 
 struct LightGroup
@@ -84,22 +78,24 @@ float DistributionGGX(vec3 N, vec3 H, float roughness)
     return a2 / denom;
 }
 
-float GeometrySchlickGGX(float NdotV, float roughness)
+float GeometrySchlickGGX(float cosNormalToX, float roughness)
 {
     float r = (roughness + 1.0);
     float k = (r*r) / 8.0;
 
-    float num   = NdotV;
-    float denom = NdotV * (1.0 - k) + k;
+    float num   = cosNormalToX;
+    float denom = (cosNormalToX * (1.0 - k)) + k;
 	
     return num / denom;
 }
 
-float GeometryGgx(vec3 normal, vec3 view, vec3 light, float rough)
+float GeometryGgx(vec3 normal, vec3 dirToCam, vec3 dirToLight, float rough)
 {
-    float ndotv = max(dot(normal, view), 0.0);
-    float ndotl = max(dot(normal, light), 0.0);
-    return GeometrySchlickGGX(ndotv, rough) * GeometrySchlickGGX(ndotl, rough);
+    float cosNormalToCam = max(dot(normal, dirToCam), 0.0);
+    float cosNormalToLight = max(dot(normal, dirToLight), 0.0);
+    float ggx2 = GeometrySchlickGGX(cosNormalToCam, rough);
+    float ggx1 = GeometrySchlickGGX(cosNormalToLight, rough);
+    return ggx1 * ggx2;
 }
 
 vec3 fresnelSchlick(float cosTheta, vec3 f0)
@@ -108,17 +104,9 @@ vec3 fresnelSchlick(float cosTheta, vec3 f0)
     return f0 + (1.0 - f0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
-// Lights
-// ============================================================
-
-vec3 DirLight(vec3 albedo, vec3 normal, float rough, float metal)
+vec3 Pbr(vec4 lightColor, vec3 dirToLight, vec3 albedo, vec3 normal, float rough, float metal)
 {
-    LightDirectional pl = scene.lights.directional;
-
     vec3 dirToCam = normalize(scene.campos - inPosition);
-    vec3 dirToLight = -pl.direction;
-    float distToLight = length(dirToLight);
-    dirToLight = normalize(dirToLight);
     vec3 halfway = normalize(dirToLight + dirToCam);
 
     // Metallic / grazing reflection
@@ -131,81 +119,55 @@ vec3 DirLight(vec3 albedo, vec3 normal, float rough, float metal)
     float geometry = GeometryGgx(normal, dirToCam, dirToLight, rough);
 
     vec3 numerator = normalDistribution * geometry * metallicReflectance;
-    float denominator = (4.0 * max(dot(normal, dirToCam), 0.0) * max(dot(normal, dirToLight), 0.0)) + 0.0001;
+    float denominator = max((4.0 * max(dot(normal, dirToCam), 0.0) * max(dot(normal, dirToLight), 0.0)), 0.0001);
     vec3 specular = numerator / denominator;
 
     vec3 ratioOfAlbedo = (vec3(1.0) - metallicReflectance) * (1.0 - metal);
 
     float facingLight = max(dot(normal, dirToLight), 0.0);
 
-    return (((ratioOfAlbedo * albedo) / PI) + specular) * pl.color * facingLight;
+    return (((ratioOfAlbedo * albedo) / PI) + specular) * lightColor.xyz * lightColor.w * facingLight;
+}
+
+// Lights
+// ============================================================
+
+vec3 DirLight(vec3 albedo, vec3 normal, float rough, float metal)
+{
+    LightDirectional light = scene.lights.directional;
+
+    vec3 dirToLight = normalize(-light.direction);
+
+    return Pbr(light.color, dirToLight, albedo, normal, rough, metal);
 }
 
 vec3 PointLight(int index, vec3 albedo, vec3 normal, float rough, float metal)
 {
     LightPoint pl = scene.lights.points[index];
 
-    vec3 dirToCam = normalize(scene.campos - inPosition);
     vec3 dirToLight = pl.position - inPosition;
     float distToLight = length(dirToLight);
     dirToLight = normalize(dirToLight);
-    vec3 halfway = normalize(dirToLight + dirToCam);
 
-    float attenuation = 1.0 / (distToLight * distToLight);
+    float attenuation = min(1.0 / (distToLight * distToLight), 1.0);
 
-    // Metallic / grazing reflection
-    vec3 metallicReflectance = mix(vec3(0.04), albedo, metal);
-    metallicReflectance = fresnelSchlick(max(dot(halfway, dirToCam), 0.0), metallicReflectance);
-
-    // Approx area exactly == halfway
-    float normalDistribution = DistributionGGX(normal, halfway, rough);
-    // Approx area self-shadowed
-    float geometry = GeometryGgx(normal, dirToCam, dirToLight, rough);
-
-    vec3 numerator = normalDistribution * geometry * metallicReflectance;
-    float denominator = (4.0 * max(dot(normal, dirToCam), 0.0) * max(dot(normal, dirToLight), 0.0)) + 0.0001;
-    vec3 specular = numerator / denominator;
-
-    vec3 ratioOfAlbedo = (vec3(1.0) - metallicReflectance) * (1.0 - metal);
-
-    float facingLight = max(dot(normal, dirToLight), 0.0);
-
-    return (((ratioOfAlbedo * albedo) / PI) + specular) * pl.color * attenuation * facingLight;
+    return Pbr(pl.color, dirToLight, albedo, normal, rough, metal) * attenuation;
 }
 
 vec3 SpotLight(int index, vec3 albedo, vec3 normal, float rough, float metal)
 {
     LightSpot pl = scene.lights.spots[index];
 
-    vec3 dirToCam = normalize(scene.campos - inPosition);
     vec3 dirToLight = pl.position - inPosition;
     float distToLight = length(dirToLight);
     dirToLight = normalize(dirToLight);
-    vec3 halfway = normalize(dirToLight + dirToCam);
 
     float theta = dot(dirToLight, normalize(pl.direction));
     float radiusFalloff = (theta - pl.cosOuter) / (pl.cosInner - pl.cosOuter);
     radiusFalloff = min(max(radiusFalloff, 0.0), 1.0);
-    float attenuation = radiusFalloff / (distToLight * distToLight);
+    float attenuation = min(radiusFalloff / (distToLight * distToLight), 1.0);
 
-    // Metallic / grazing reflection
-    vec3 metallicReflectance = mix(vec3(0.04), albedo, metal);
-    metallicReflectance = fresnelSchlick(max(dot(halfway, dirToCam), 0.0), metallicReflectance);
-
-    // Approx area exactly == halfway
-    float normalDistribution = DistributionGGX(normal, halfway, rough);
-    // Approx area self-shadowed
-    float geometry = GeometryGgx(normal, dirToCam, dirToLight, rough);
-
-    vec3 numerator = normalDistribution * geometry * metallicReflectance;
-    float denominator = (4.0 * max(dot(normal, dirToCam), 0.0) * max(dot(normal, dirToLight), 0.0)) + 0.0001;
-    vec3 specular = numerator / denominator;
-
-    vec3 ratioOfAlbedo = (vec3(1.0) - metallicReflectance) * (1.0 - metal);
-
-    float facingLight = max(dot(normal, dirToLight), 0.0);
-
-    return (((ratioOfAlbedo * albedo) / PI) + specular) * pl.color * attenuation * facingLight;
+    return Pbr(pl.color, dirToLight, albedo, normal, rough, metal) * attenuation;
 }
 
 // Main
@@ -234,20 +196,15 @@ void main()
 {
     vec3 albedo = texture(texAlbedo, inUv).xyz;
     vec3 mats = texture(texMaps, inUv).xyz;
-    float rough = 1-mats.y;
+    float ao = mats.x;
+    float rough = mats.y;
     float metal = mats.z;
 
-    // vec3 albedo = vec3(1.0);
-    // float rough = scene.lights.points[0].linear;
-    // float metal = scene.lights.points[0].quadratic;
+    vec3 normal = normalize(texture(texNormal, inUv).xyz * 2.0 - 1.0);
+    normal = normalize(inTBN * normal);
 
-    // vec3 normal = texture(texNormal, inUv).xyz * 2.0 - 1.0;
-    // normal = normalize(inTBN * normal);
-    vec3 normal = normalize(inNormal);
+    vec3 light = CalculateLights(albedo, normal, rough, metal) + scene.ambient;
 
-    vec3 dirToCam = normalize(scene.campos - inPosition);
-    vec3 light = CalculateLights(albedo, normal, rough, metal);
-
-    vec3 finalColor = light * albedo;
+    vec3 finalColor = light * albedo * ao;
     outColor = vec4(finalColor, 1.0);
 }

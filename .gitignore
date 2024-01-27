@@ -5,6 +5,9 @@
 
 .obsidian
 
+# Resources too big to include
+**/sponza/*
+
 # Visual studio files
 *.vcxproj
 *.sln
