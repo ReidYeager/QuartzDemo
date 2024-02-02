@@ -18,13 +18,6 @@ private:
   // Pbr
   // ============================================================
 
-  struct
-  {
-    Quartz::Texture albedo;
-    Quartz::Texture normal;
-    Quartz::Texture maps;
-  } pbrTextures;
-
   struct PbrBufferInfo
   {
     Vec3 baseReflectivity;
@@ -32,33 +25,54 @@ private:
     float metalness;
   };
 
-  Quartz::Material pbrMaterial;
+  struct
+  {
+    struct
+    {
+      Quartz::Texture albedo;
+      Quartz::Texture normal;
+      Quartz::Texture maps[objectCount];
+    } textures;
 
-  Quartz::Material pbrInstances[objectCount] = {};
-  Quartz::Buffer pbrBuffers[objectCount] = {};
-  PbrBufferInfo pbrBufferData[objectCount] = {};
+    struct
+    {
+      Quartz::Buffer buffers[objectCount];
+      PbrBufferInfo data[objectCount];
+    } buffers;
+
+    Quartz::Material materialBase;
+    Quartz::Material materials[objectCount];
+
+  } pbrResources;
 
   // Lights
   // ============================================================
 
-  // For visualizing point/spot lights' positions
-  Quartz::Mesh     lightbulbMesh;
-  Quartz::Material lightbulbMaterial;
-
   static const uint32_t pointLightCount = 4; //QTZ_LIGHT_POINT_MAX_COUNT;
   static const uint32_t spotLightCount = 2; //QTZ_LIGHT_SPOT_MAX_COUNT;
   static const uint32_t lightbulbCount = pointLightCount + spotLightCount;
-  Quartz::Material lightbulbInstances[lightbulbCount] = {};
-  Quartz::Buffer   lightbulbBuffers[lightbulbCount] = {};
-  Transform* lightbulbTransforms[lightbulbCount] = {};
 
-  Quartz::Entity dirLight;
-  Quartz::Entity pointLights[pointLightCount] = {};
-  Quartz::Entity spotLights[spotLightCount] = {};
+  // For visualizing point/spot lights' positions
+  struct
+  {
+    Quartz::Mesh     mesh;
+    Quartz::Material materialBase;
+    Quartz::Material materials[lightbulbCount];
+    Quartz::Buffer   buffers  [lightbulbCount];
 
-  Quartz::LightDirectional* dirLightPtr;
-  Quartz::LightPoint* pointLightPtr[pointLightCount] = {};
-  Quartz::LightSpot* spotLightPtr[spotLightCount] = {};
+    Transform* transforms[lightbulbCount];
+    struct
+    {
+      Quartz::LightDirectional* dir;
+      Quartz::LightPoint* point[pointLightCount];
+      Quartz::LightSpot* spot[spotLightCount];
+    } pointers;
+
+    Quartz::Entity directional;
+    Quartz::Entity points[pointLightCount];
+    Quartz::Entity spots[spotLightCount];
+
+  } lights;
 
   // Camera
   // ============================================================
@@ -77,4 +91,12 @@ public:
   QuartzResult Update(double deltaTime) override;
   void         Shutdown()               override;
   void         RenderImgui()            override;
+
+private:
+  QuartzResult InitResources();
+  QuartzResult InitObjects();
+  QuartzResult InitLights();
+
+  QuartzResult UpdateCamera();
+
 };

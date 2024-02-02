@@ -2,19 +2,22 @@
 
 struct LightDirectional
 {
-    vec4 color;
+    vec3 color;
+    float intensity;
     vec3 direction;
 };
 
 struct LightPoint
 {
-    vec4 color;
+    vec3 color;
+    float intensity;
     vec3 position;
 };
 
 struct LightSpot
 {
-    vec4 color;
+    vec3 color;
+    float intensity;
     vec3 position;
     vec3 direction;
 
@@ -104,7 +107,7 @@ vec3 fresnelSchlick(float cosTheta, vec3 f0)
     return f0 + (1.0 - f0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
-vec3 Pbr(vec4 lightColor, vec3 dirToLight, vec3 albedo, vec3 normal, float rough, float metal)
+vec3 Pbr(vec3 lightColor, vec3 dirToLight, vec3 albedo, vec3 normal, float rough, float metal)
 {
     vec3 dirToCam = normalize(scene.campos - inPosition);
     vec3 halfway = normalize(dirToLight + dirToCam);
@@ -126,7 +129,7 @@ vec3 Pbr(vec4 lightColor, vec3 dirToLight, vec3 albedo, vec3 normal, float rough
 
     float facingLight = max(dot(normal, dirToLight), 0.0);
 
-    return (((ratioOfAlbedo * albedo) / PI) + specular) * lightColor.xyz * lightColor.w * facingLight;
+    return (((ratioOfAlbedo * albedo) / PI) + specular) * lightColor.xyz * facingLight;
 }
 
 // Lights
@@ -138,7 +141,7 @@ vec3 DirLight(vec3 albedo, vec3 normal, float rough, float metal)
 
     vec3 dirToLight = normalize(-light.direction);
 
-    return Pbr(light.color, dirToLight, albedo, normal, rough, metal);
+    return Pbr(light.color, dirToLight, albedo, normal, rough, metal) * light.intensity;
 }
 
 vec3 PointLight(int index, vec3 albedo, vec3 normal, float rough, float metal)
@@ -151,7 +154,7 @@ vec3 PointLight(int index, vec3 albedo, vec3 normal, float rough, float metal)
 
     float attenuation = min(1.0 / (distToLight * distToLight), 1.0);
 
-    return Pbr(pl.color, dirToLight, albedo, normal, rough, metal) * attenuation;
+    return Pbr(pl.color, dirToLight, albedo, normal, rough, metal) * attenuation * pl.intensity;
 }
 
 vec3 SpotLight(int index, vec3 albedo, vec3 normal, float rough, float metal)
@@ -167,7 +170,7 @@ vec3 SpotLight(int index, vec3 albedo, vec3 normal, float rough, float metal)
     radiusFalloff = min(max(radiusFalloff, 0.0), 1.0);
     float attenuation = min(radiusFalloff / (distToLight * distToLight), 1.0);
 
-    return Pbr(pl.color, dirToLight, albedo, normal, rough, metal) * attenuation;
+    return Pbr(pl.color, dirToLight, albedo, normal, rough, metal) * attenuation * pl.intensity;
 }
 
 // Main
@@ -200,7 +203,8 @@ void main()
     float rough = mats.y;
     float metal = mats.z;
 
-    vec3 normal = normalize(texture(texNormal, inUv).xyz * 2.0 - 1.0);
+    vec3 normal = inNormal;
+    normal = texture(texNormal, inUv).xyz * 2.0 - 1.0;
     normal = normalize(inTBN * normal);
 
     vec3 light = CalculateLights(albedo, normal, rough, metal) + scene.ambient;
