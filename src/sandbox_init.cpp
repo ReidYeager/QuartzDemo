@@ -25,7 +25,7 @@ QuartzResult Sandbox::InitResources()
 {
   Quartz::Buffer dummyBuffer(1);
 
-  // Textures
+  // Object - Textures
   // ============================================================
 
   //QTZ_ATTEMPT(pbrResources.textures.albedo.Init("D:/Dev/QuartzSandbox/res/textures/CyborgWeapon/Weapon_albedo.png"));
@@ -35,38 +35,76 @@ QuartzResult Sandbox::InitResources()
   //QTZ_ATTEMPT(pbrResources.textures.normal.Init("D:/Dev/QuartzSandbox/res/textures/TestNormal.png"));
   QTZ_ATTEMPT(pbrResources.textures.normal.Init(1, 1, { Vec3{ 0.5f, 0.5f, 1.0f } }));
 
-  //QTZ_ATTEMPT(pbrResources.textures.maps.Init("D:/Dev/QuartzSandbox/res/textures/CyborgWeapon/Weapon_AoRoughnessMetallic.png"));
   for (uint32_t y = 0; y < axisCount; y++)
   for (uint32_t x = 0; x < axisCount; x++)
   {
     uint32_t index = (y * axisCount) + x;
     float offset = (0.5f / axisCount);
     pbrResources.buffers.buffers[index].Init(sizeof(PbrBufferInfo));
+    //QTZ_ATTEMPT(pbrResources.textures.maps[index].Init("D:/Dev/QuartzSandbox/res/textures/CyborgWeapon/Weapon_AoRoughnessMetallic.png"));
     QTZ_ATTEMPT(pbrResources.textures.maps[index].Init(1, 1, { Vec3{1.0f, ((float)x / axisCount) + offset, ((float)y / axisCount) + offset } }));
   }
 
-  // Material
+  QTZ_ATTEMPT(pbrResources.textures.hdri.InitExr("D:/Dev/QuartzSandbox/res/textures/hdri/whipple_creek_regional_park_04_4k.exr"))
+
+  // Object - Material
   // ============================================================
 
   QTZ_ATTEMPT(
     pbrResources.materialBase.Init(
       { "D:/Dev/QuartzSandbox/res/shaders/compiled/0_blank.vert.spv",
-      "D:/Dev/QuartzSandbox/res/shaders/compiled/3_pbr.frag.spv" },
-      //"D:/Dev/QuartzSandbox/res/shaders/compiled/4_ibl.frag.spv" },
+      //"D:/Dev/QuartzSandbox/res/shaders/compiled/3_pbr.frag.spv" },
+      "D:/Dev/QuartzSandbox/res/shaders/compiled/4_ibl.frag.spv" },
       { {.type = Quartz::Input_Buffer,  .value = {.buffer = dummyBuffer          } },
         {.type = Quartz::Input_Texture, .value = {.texture = pbrResources.textures.albedo  } },
         {.type = Quartz::Input_Texture, .value = {.texture = pbrResources.textures.normal  } },
-        {.type = Quartz::Input_Texture, .value = {.texture = pbrResources.textures.maps[0] } }
+        {.type = Quartz::Input_Texture, .value = {.texture = pbrResources.textures.maps[0] } },
+        {.type = Quartz::Input_Texture, .value = {.texture = pbrResources.textures.hdri    } }
       })
     );
 
-  // Mesh
+  // Object - Mesh
   // ============================================================
 
   //QTZ_ATTEMPT(objectMesh.Init("D:/Dev/QuartzSandbox/res/models/Cyborg_Weapon.obj"));
   QTZ_ATTEMPT(objectMesh.Init("D:/Dev/QuartzSandbox/res/models/SphereSmooth.obj"));
   //QTZ_ATTEMPT(objectMesh.Init("D:/Dev/QuartzSandbox/res/models/sponza/sponza.obj"));
   //QTZ_ATTEMPT(objectMesh.InitFromDump("D:/Dev/QuartzSandbox/res/models/sponza/sponza.dmp"));
+
+  // Skybox
+  // ============================================================
+
+  Quartz::Vertex v = {};
+  v.normal = Vec3{ 0.0f, 0.0f, 0.0f };
+  v.tangent = Vec3{ 0.0f, 0.0f, 0.0f };
+  v.uv = Vec2{ 0.0f, 0.0f };
+
+  std::vector<Quartz::Vertex> screenQuadVerts(4);
+  v.position = Vec3{ -1.0f, -1.0f, 0.0f };
+  screenQuadVerts[0] = v;
+  v.position = Vec3{  1.0f, -1.0f, 0.0f };
+  screenQuadVerts[1] = v;
+  v.position = Vec3{  1.0f,  1.0f, 0.0f };
+  screenQuadVerts[2] = v;
+  v.position = Vec3{ -1.0f,  1.0f, 0.0f };
+  screenQuadVerts[3] = v;
+
+  std::vector<uint32_t> screenQuadIndices(6);
+  screenQuadIndices[0] = 0;
+  screenQuadIndices[1] = 1;
+  screenQuadIndices[2] = 2;
+
+  screenQuadIndices[3] = 2;
+  screenQuadIndices[4] = 3;
+  screenQuadIndices[5] = 0;
+
+  QTZ_ATTEMPT(skybox.mesh.Init(screenQuadVerts, screenQuadIndices));
+  QTZ_ATTEMPT(skybox.material.Init(
+    { "D:/Dev/QuartzSandbox/res/shaders/compiled/s_skybox.vert.spv",
+      "D:/Dev/QuartzSandbox/res/shaders/compiled/s_skybox.frag.spv" },
+    { { .type = Quartz::Input_Texture, .value = { .texture = pbrResources.textures.hdri } } },
+    Quartz::Pipeline_Cull_Front | Quartz::Pipeline_Depth_Compare_LessEqual
+    ));
 
   dummyBuffer.Shutdown();
   return Quartz_Success;
@@ -91,7 +129,8 @@ QuartzResult Sandbox::InitObjects()
         { .buffer = pbrResources.buffers.buffers[i] },
         { .texture = pbrResources.textures.albedo   },
         { .texture = pbrResources.textures.normal   },
-        { .texture = pbrResources.textures.maps[i]  }
+        { .texture = pbrResources.textures.maps[i]  },
+        { .texture = pbrResources.textures.hdri     }
       });
 
     pbrResources.buffers.data[i].baseReflectivity = Vec3{ 0.56f, 0.57f, 0.58f };
@@ -101,6 +140,10 @@ QuartzResult Sandbox::InitObjects()
 
     *e.Add<Quartz::Renderable>() = Quartz::Renderable{ .mesh = &objectMesh, .material = &pbrResources.materials[i] };
   }
+
+  // Skybox
+
+  *skybox.entity.Add<Quartz::Renderable>() = Quartz::Renderable{ .mesh = &skybox.mesh, .material = &skybox.material };
 
   return Quartz_Success;
 }

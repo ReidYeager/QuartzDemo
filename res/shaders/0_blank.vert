@@ -29,7 +29,7 @@ void main()
     outPosition = worldPosition.xyz;
     outUv = inUv;
 
-    mat3 normalMatrix = mat3(transpose(inverse(pushConst.objectTransform)));
+    mat3 normalMatrix = transpose(inverse(mat3(pushConst.objectTransform)));
     outNormal = normalize(normalMatrix * inNormal);
     outTangent = normalize(normalMatrix * inTangent);
     vec3 bitan = normalize(cross(outNormal, outTangent));

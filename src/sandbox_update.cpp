@@ -8,9 +8,10 @@ QuartzResult Sandbox::Update(double deltaTime)
     Quartz::RequestQuit();
   }
 
-  if (Quartz::Input::OnButtonPress(Quartz::Key_Space))
+  if (Quartz::Input::OnButtonPress(Quartz::Key_Space) || Quartz::Input::OnButtonPress(Quartz::Mouse_Middle))
   {
     pbrResources.materialBase.Reload();
+    skybox.material.Reload();
   }
 
   // Camera

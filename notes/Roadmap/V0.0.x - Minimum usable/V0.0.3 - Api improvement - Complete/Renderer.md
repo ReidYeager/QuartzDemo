@@ -1,0 +1,4 @@
+- [ ] Begin X (scene? render? frame?)
+- [ ] Bind material?
+- [ ] Submit mesh
+- [ ] End X

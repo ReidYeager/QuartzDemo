@@ -32,6 +32,7 @@ private:
       Quartz::Texture albedo;
       Quartz::Texture normal;
       Quartz::Texture maps[objectCount];
+      Quartz::Texture hdri;
     } textures;
 
     struct
@@ -44,6 +45,17 @@ private:
     Quartz::Material materials[objectCount];
 
   } pbrResources;
+
+  // Skybox
+  // ============================================================
+
+  struct
+  {
+    Quartz::Mesh mesh;
+    Quartz::Material material;
+    Quartz::Entity entity;
+  } skybox;
+
 
   // Lights
   // ============================================================
