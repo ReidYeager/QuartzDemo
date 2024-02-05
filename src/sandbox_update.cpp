@@ -22,16 +22,16 @@ QuartzResult Sandbox::Update(double deltaTime)
   // Update spotlight transforms
   // ============================================================
 
-  Transform* camTrans = camera.Get<Transform>();
-  Quaternion rot = Quaternion(camTrans->rotation);
+  //Transform* camTrans = camera.Get<Transform>();
+  //Quaternion rot = Quaternion(camTrans->rotation);
 
-  for (uint32_t i = 0; i < spotLightCount; i++)
-  {
-    Transform* t = lights.spots[i].Get<Transform>();
-    t->position = camTrans->position;
+  //for (uint32_t i = 0; i < spotLightCount; i++)
+  //{
+  //  Transform* t = lights.spots[i].Get<Transform>();
+  //  t->position = camTrans->position;
 
-    lights.spots[i].Get<Quartz::LightSpot>()->direction = rot * Vec3{ 0.0f, 0.0f, 1.0f };
-  }
+  //  lights.spots[i].Get<Quartz::LightSpot>()->direction = rot * Vec3{ 0.0f, 0.0f, 1.0f };
+  //}
 
   return Quartz_Success;
 }

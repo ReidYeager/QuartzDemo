@@ -21,6 +21,11 @@ void Sandbox::Shutdown()
   skybox.mesh.Shutdown();
   skybox.material.Shutdown();
 
+  testInfo.material.Shutdown();
+  testInfo.mesh.Shutdown();
+  testInfo.texture.Shutdown();
+  testInfo.buffer.Shutdown();
+
   objectMesh.Shutdown();
 
   for (uint32_t i = 0; i < lightbulbCount; i++)

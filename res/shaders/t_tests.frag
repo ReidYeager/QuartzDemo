@@ -3,14 +3,12 @@
 layout(set = 0, binding = 0) uniform SceneStruct
 {
     mat4 viewProj;
-    int a;
-    int b;
-    int c;
-    int d;
-
-    vec3 v;
-    uint q;
 } scene;
+
+layout(set = 1, binding = 0) uniform MaterialStruct{
+    float lod;
+} mat;
+layout(set = 1, binding = 1) uniform sampler2D tex;
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec2 inUv;
@@ -22,5 +20,7 @@ layout(location = 0) out vec4 outColor;
 
 void main()
 {
-    outColor = vec4(0.6, 0.12, 0.83, 1.0);
+    vec3 c = texture(tex, inUv, mat.lod).xyz;
+
+    outColor = vec4(c, 1.0);
 }

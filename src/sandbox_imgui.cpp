@@ -73,5 +73,14 @@ void Sandbox::RenderImgui()
   //}
   //ImGui::PopID();
 
+  // Test
+  // ============================================================
+
+  ImGui::SeparatorText("Test");
+  ImGui::PushID("Test");
+  ImGui::DragFloat("lod", &testInfo.bufferData.lod, 0.01f);
+  ImGui::PopID();
+  testInfo.buffer.PushData(&testInfo.bufferData);
+
   ImGui::End();
 }

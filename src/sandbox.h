@@ -1,5 +1,7 @@
 #pragma once
 
+#pragma comment(linker, "/STACK:8000000")
+
 #include <quartz.h>
 
 class Sandbox : public Quartz::Application
@@ -93,6 +95,23 @@ private:
   float cameraSpeed = 4.0f;
   float speedShiftMultiplier = 2.0f;
   float speedAltMultiplier = 0.5f;
+
+  // Test
+  // ============================================================
+
+  struct
+  {
+    Quartz::Buffer buffer;
+    Quartz::Texture texture;
+    Quartz::Material material;
+    Quartz::Mesh mesh;
+    Quartz::Entity entity;
+
+    struct
+    {
+      float lod = 0;
+    } bufferData;
+  } testInfo;
 
   // Declarations
   // ============================================================
