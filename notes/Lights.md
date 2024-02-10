@@ -1,0 +1,4 @@
+- [ ] Define light Ui templates
+- [ ] Show a template for each light in the scene
+- [ ] "Add light" button
+- [ ] "Remove light" button
