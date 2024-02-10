@@ -35,6 +35,9 @@ private:
       Quartz::Texture normal;
       Quartz::Texture maps[objectCount];
       Quartz::Texture hdri;
+      Quartz::Texture hdriDiffuse;
+      Quartz::Texture hdriSpecular;
+      Quartz::Texture hdriBrdf;
     } textures;
 
     struct

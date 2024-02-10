@@ -17,7 +17,7 @@ vec2 SphericalMapToUv(vec3 vector)
     vec2 uv = vec2(atan(vector.z, vector.x), asin(vector.y));
     uv *= invAtan;
     uv += 0.5;
-    uv.y *= -1;
+    uv.y = 1.0 - uv.y;
     return uv;
 }
 

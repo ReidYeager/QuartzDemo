@@ -1,6 +1,8 @@
 
 #include "sandbox.h"
 
+#include <math.h>
+
 QuartzResult Sandbox::Init()
 {
   QTZ_DEBUG("Sandbox Init");
@@ -12,23 +14,23 @@ QuartzResult Sandbox::Init()
   // Test
   // ============================================================
   QTZ_ATTEMPT(testInfo.buffer.Init(sizeof(testInfo.bufferData)));
-  QTZ_ATTEMPT(testInfo.texture.Init(Quartz::Texture_RGBA8, "D:/Dev/QuartzSandbox/res/textures/AltImage.png"));
-  QTZ_ATTEMPT(testInfo.mesh.Init("D:/Dev/QuartzSandbox/res/models/Cube.obj"));
-  QTZ_ATTEMPT(
-    testInfo.material.Init(
-      {
-        "D:/Dev/QuartzSandbox/res/shaders/compiled/0_blank.vert.spv",
-        "D:/Dev/QuartzSandbox/res/shaders/compiled/t_tests.frag.spv"
-      },
-      {
-        { .type = Quartz::Input_Buffer , .value = { .buffer  = &testInfo.buffer  } },
-        { .type = Quartz::Input_Texture, .value = { .texture = &testInfo.texture } }
-      }
-    ));
-  Quartz::Renderable* testR = testInfo.entity.Add<Quartz::Renderable>();
-  testR->material = &testInfo.material;
-  testR->mesh = &testInfo.mesh;
-  testInfo.entity.Get<Transform>()->position = Vec3{ 0.0f, 0.0f, -2.0f };
+  //QTZ_ATTEMPT(testInfo.texture.Init("D:/Dev/QuartzSandbox/res/textures/AltImage.png"));
+  ////QTZ_ATTEMPT(testInfo.texture.Init(1, 1, { Vec3{ 1.0f, 1.0f, 1.0f } }, Quartz::Texture_Format_RGBA8, Quartz::Texture_Usage_Framebuffer | Quartz::Texture_Usage_Shader_Input));
+  //QTZ_ATTEMPT(testInfo.mesh.Init("D:/Dev/QuartzSandbox/res/models/Cube.obj"));
+  //QTZ_ATTEMPT(
+  //  testInfo.material.Init(
+  //    {
+  //      "D:/Dev/QuartzSandbox/res/shaders/compiled/0_blank.vert.spv",
+  //      "D:/Dev/QuartzSandbox/res/shaders/compiled/t_tests.frag.spv"
+  //    },
+  //    {
+  //      { .type = Quartz::Input_Buffer , .value = { .buffer  = &testInfo.buffer  } },
+  //      { .type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.hdriSpecular } }
+  //    }));
+  //Quartz::Renderable* testR = testInfo.entity.Add<Quartz::Renderable>();
+  //testR->material = &testInfo.material;
+  //testR->mesh = &testInfo.mesh;
+  //testInfo.entity.Get<Transform>()->position = Vec3{ 0.0f, 0.0f, 2.0f };
 
   // Camera
   // ============================================================
@@ -50,11 +52,11 @@ QuartzResult Sandbox::InitResources()
   // ============================================================
 
   //QTZ_ATTEMPT(pbrResources.textures.albedo.Init("D:/Dev/QuartzSandbox/res/textures/CyborgWeapon/Weapon_albedo.png"));
-  QTZ_ATTEMPT(pbrResources.textures.albedo.Init(Quartz::Texture_RGBA8, 1, 1, { Vec4{ 1.0f, 1.0f, 1.0f, 1.0f } }));
+  QTZ_ATTEMPT(pbrResources.textures.albedo.Init({ Vec3{ 1.0f, 1.0f, 1.0f } }));
 
   //QTZ_ATTEMPT(pbrResources.textures.normal.Init("D:/Dev/QuartzSandbox/res/textures/CyborgWeapon/Weapon_normal.png"));
   //QTZ_ATTEMPT(pbrResources.textures.normal.Init("D:/Dev/QuartzSandbox/res/textures/TestNormal.png"));
-  QTZ_ATTEMPT(pbrResources.textures.normal.Init(Quartz::Texture_RGBA8, 1, 1, { Vec4{ 0.5f, 0.5f, 1.0f, 1.0f } }));
+  QTZ_ATTEMPT(pbrResources.textures.normal.Init({ Vec3{ 0.5f, 0.5f, 1.0f } }));
 
   for (uint32_t y = 0; y < axisCount; y++)
   for (uint32_t x = 0; x < axisCount; x++)
@@ -63,10 +65,21 @@ QuartzResult Sandbox::InitResources()
     float offset = (0.5f / axisCount);
     pbrResources.buffers.buffers[index].Init(sizeof(PbrBufferInfo));
     //QTZ_ATTEMPT(pbrResources.textures.maps[index].Init("D:/Dev/QuartzSandbox/res/textures/CyborgWeapon/Weapon_AoRoughnessMetallic.png"));
-    QTZ_ATTEMPT(pbrResources.textures.maps[index].Init(Quartz::Texture_RGBA8, 1, 1, { Vec4{ 1.0f, ((float)x / axisCount) + offset, ((float)y / axisCount) + offset, 1.0f } }));
+    QTZ_ATTEMPT(pbrResources.textures.maps[index].Init({ Vec3{ 1.0f, ((float)x / axisCount) + offset, ((float)y / axisCount) + offset } }));
   }
 
-  QTZ_ATTEMPT(pbrResources.textures.hdri.Init(Quartz::Texture_RGBA32, "D:/Dev/QuartzSandbox/res/textures/hdri/whipple_creek_regional_park_04_4k.exr"))
+  pbrResources.textures.hdri.format = Quartz::Texture_Format_RGBA32;
+  pbrResources.textures.hdri.sampleMode = Quartz::Texture_Sample_Clamp;
+  pbrResources.textures.hdri.mipLevels = 1;
+  //QTZ_ATTEMPT(pbrResources.textures.hdri.Init("D:/Dev/QuartzSandbox/res/textures/hdri/whipple_creek_regional_park_04_4k.exr"));
+  QTZ_ATTEMPT(pbrResources.textures.hdri.Init("D:/Dev/QuartzSandbox/res/textures/hdri/studio_small_08_4k.exr"));
+
+
+  Quartz::SetHdri(pbrResources.textures.hdri);
+  QTZ_ATTEMPT(Quartz::ConvolveHdri());
+  pbrResources.textures.hdriDiffuse = Quartz::GetDiffuseHdri();
+  pbrResources.textures.hdriSpecular = Quartz::GetSpecularHdri();
+  pbrResources.textures.hdriBrdf = Quartz::GetSpecularBrdf();
 
   // Object - Material
   // ============================================================
@@ -77,13 +90,15 @@ QuartzResult Sandbox::InitResources()
         "D:/Dev/QuartzSandbox/res/shaders/compiled/0_blank.vert.spv",
         "D:/Dev/QuartzSandbox/res/shaders/compiled/4_ibl.frag.spv" },
       {
-        {.type = Quartz::Input_Buffer,  .value = { .buffer  = &dummyBuffer                   } },
-        {.type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.albedo  } },
-        {.type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.normal  } },
-        {.type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.maps[0] } },
-        {.type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.hdri    } }
-      }
-    ));
+        { .type = Quartz::Input_Buffer,  .value = { .buffer  = &dummyBuffer                        } },
+        { .type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.albedo       } },
+        { .type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.normal       } },
+        { .type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.maps[0]      } },
+        { .type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.hdri         } },
+        { .type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.hdriDiffuse  } },
+        { .type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.hdriSpecular } },
+        { .type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.hdriBrdf     } }
+      }));
 
   // Object - Mesh
   // ============================================================
@@ -96,29 +111,15 @@ QuartzResult Sandbox::InitResources()
   // Skybox
   // ============================================================
 
-  Quartz::Vertex v = {};
-  v.normal = Vec3{ 0.0f, 0.0f, 0.0f };
-  v.tangent = Vec3{ 0.0f, 0.0f, 0.0f };
-  v.uv = Vec2{ 0.0f, 0.0f };
-
   std::vector<Quartz::Vertex> screenQuadVerts(4);
-  v.position = Vec3{ -1.0f, -1.0f, 0.0f };
-  screenQuadVerts[0] = v;
-  v.position = Vec3{  1.0f, -1.0f, 0.0f };
-  screenQuadVerts[1] = v;
-  v.position = Vec3{  1.0f,  1.0f, 0.0f };
-  screenQuadVerts[2] = v;
-  v.position = Vec3{ -1.0f,  1.0f, 0.0f };
-  screenQuadVerts[3] = v;
+  screenQuadVerts[0].position = Vec3{ -1.0f, -1.0f, 0.0f };
+  screenQuadVerts[1].position = Vec3{  1.0f, -1.0f, 0.0f };
+  screenQuadVerts[2].position = Vec3{  1.0f,  1.0f, 0.0f };
+  screenQuadVerts[3].position = Vec3{ -1.0f,  1.0f, 0.0f };
 
   std::vector<uint32_t> screenQuadIndices(6);
-  screenQuadIndices[0] = 0;
-  screenQuadIndices[1] = 1;
-  screenQuadIndices[2] = 2;
-
-  screenQuadIndices[3] = 2;
-  screenQuadIndices[4] = 3;
-  screenQuadIndices[5] = 0;
+  screenQuadIndices[0] = 0; screenQuadIndices[1] = 1; screenQuadIndices[2] = 2;
+  screenQuadIndices[3] = 2; screenQuadIndices[4] = 3; screenQuadIndices[5] = 0;
 
   QTZ_ATTEMPT(skybox.mesh.Init(screenQuadVerts, screenQuadIndices));
   QTZ_ATTEMPT(
@@ -130,8 +131,7 @@ QuartzResult Sandbox::InitResources()
       {
         { .type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.hdri } }
       },
-      Quartz::Pipeline_Cull_Front | Quartz::Pipeline_Depth_Compare_LessEqual
-    ));
+      Quartz::Pipeline_Cull_Front | Quartz::Pipeline_Depth_Compare_LessEqual));
 
   dummyBuffer.Shutdown();
   return Quartz_Success;
@@ -153,11 +153,14 @@ QuartzResult Sandbox::InitObjects()
     pbrResources.materials[i].Init(
       pbrResources.materialBase,
       {
-        { .buffer  = &pbrResources.buffers.buffers[i] },
-        { .texture = &pbrResources.textures.albedo    },
-        { .texture = &pbrResources.textures.normal    },
-        { .texture = &pbrResources.textures.maps[i]   },
-        { .texture = &pbrResources.textures.hdri      }
+        { .buffer  = &pbrResources.buffers.buffers[i]    },
+        { .texture = &pbrResources.textures.albedo       },
+        { .texture = &pbrResources.textures.normal       },
+        { .texture = &pbrResources.textures.maps[i]      },
+        { .texture = &pbrResources.textures.hdri         },
+        { .texture = &pbrResources.textures.hdriDiffuse  },
+        { .texture = &pbrResources.textures.hdriSpecular },
+        { .texture = &pbrResources.textures.hdriBrdf     }
       });
 
     pbrResources.buffers.data[i].baseReflectivity = Vec3{ 0.56f, 0.57f, 0.58f };
@@ -253,7 +256,8 @@ QuartzResult Sandbox::InitLights()
 
     lights.transforms[bulbIndex] = lights.spots[i].Get<Transform>();
     lights.transforms[bulbIndex]->scale = Vec3{ 0.1f, 0.1f, 0.3f };
-    lights.transforms[bulbIndex]->position = Vec3{ (float)i * 2.0f, 4.0f, 2.0f };
+    //lights.transforms[bulbIndex]->position = Vec3{ (float)i * 2.0f, 4.0f, 2.0f };
+    lights.transforms[bulbIndex]->position = Vec3{ 0.0f, 0.0f, 0.0f };
   }
 
   dummyBuffer.Shutdown();

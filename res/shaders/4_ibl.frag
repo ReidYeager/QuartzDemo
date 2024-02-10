@@ -55,6 +55,9 @@ layout (set = 1, binding = 1) uniform sampler2D texAlbedo;
 layout (set = 1, binding = 2) uniform sampler2D texNormal;
 layout (set = 1, binding = 3) uniform sampler2D texMaps;
 layout (set = 1, binding = 4) uniform sampler2D texHdri;
+layout (set = 1, binding = 5) uniform sampler2D texHdriDiffuse;
+layout (set = 1, binding = 6) uniform sampler2D texHdriSpecular;
+layout (set = 1, binding = 7) uniform sampler2D texHdriBrdf;
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec2 inUv;
@@ -63,6 +66,16 @@ layout(location = 3) in vec3 inTangent;
 layout(location = 4) in mat3 inTBN;
 
 layout(location = 0) out vec4 outColor;
+
+const vec2 invAtan = vec2(0.1591, 0.3183);
+vec2 SphericalMapToUv(vec3 vector)
+{
+    vec2 uv = vec2(atan(vector.z, vector.x), asin(vector.y));
+    uv *= invAtan;
+    uv += 0.5;
+    uv.y = 1.0 - uv.y;
+    return uv;
+}
 
 // PBR
 // ============================================================
@@ -108,29 +121,37 @@ vec3 fresnelSchlick(float cosTheta, vec3 f0)
     return f0 + (1.0 - f0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
+vec3 fresnelSchlickRoughness(float cosTheta, vec3 f0, float roughness)
+{
+    // f0 = surface reflection at zero incidence (directly at surface)
+    return f0 + (max(vec3(1.0 - roughness), f0) - f0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
 vec3 Pbr(vec3 lightColor, vec3 dirToLight, vec3 albedo, vec3 normal, float rough, float metal)
 {
     vec3 dirToCam = normalize(scene.campos - inPosition);
     vec3 halfway = normalize(dirToLight + dirToCam);
 
-    // Metallic / grazing reflection
-    vec3 metallicReflectance = mix(vec3(0.04), albedo, metal);
-    metallicReflectance = fresnelSchlick(max(dot(halfway, dirToCam), 0.0), metallicReflectance);
+    vec3 f0 = vec3(0.04);
+    f0 = mix(f0, albedo, metal);
 
     // Approx area exactly == halfway
-    float normalDistribution = DistributionGGX(normal, halfway, rough);
+    float NDF = DistributionGGX(normal, halfway, rough);
     // Approx area self-shadowed
-    float geometry = GeometryGgx(normal, dirToCam, dirToLight, rough);
+    float G = GeometryGgx(normal, dirToCam, dirToLight, rough);
+    // Metallic / grazing reflection
+    vec3 F = fresnelSchlick(max(dot(halfway, dirToCam), 0.0), f0);    
 
-    vec3 numerator = normalDistribution * geometry * metallicReflectance;
+    vec3 ks = F;
+    vec3 kd = vec3(1.0) - ks;
+    kd *= 1.0 - metal;
+
+    vec3 numerator = NDF * G * F;
     float denominator = max((4.0 * max(dot(normal, dirToCam), 0.0) * max(dot(normal, dirToLight), 0.0)), 0.0001);
     vec3 specular = numerator / denominator;
 
-    vec3 ratioOfAlbedo = (vec3(1.0) - metallicReflectance) * (1.0 - metal);
-
-    float facingLight = max(dot(normal, dirToLight), 0.0);
-
-    return (((ratioOfAlbedo * albedo) / PI) + specular) * lightColor.xyz * facingLight;
+    float ndotl = max(dot(normal, dirToLight), 0.0);
+    return (kd * albedo / PI + specular) * lightColor * ndotl;
 }
 
 // Lights
@@ -196,16 +217,6 @@ vec3 CalculateLights(vec3 albedo, vec3 normal, float rough, float metal)
     return totalLight;
 }
 
-const vec2 invAtan = vec2(0.1591, 0.3183);
-vec2 SphericalMapToUv(vec3 vector)
-{
-    vec2 uv = vec2(atan(vector.z, vector.x), asin(vector.y));
-    uv *= invAtan;
-    uv += 0.5;
-    uv.y *= -1;
-    return uv;
-}
-
 void main()
 {
     vec3 albedo = texture(texAlbedo, inUv).xyz;
@@ -217,11 +228,30 @@ void main()
     vec3 normal = normalize(inNormal);
     normal = texture(texNormal, inUv).xyz * 2.0 - 1.0;
     normal = normalize(inTBN * normal);
+    vec3 dirToCam = normalize(scene.campos - inPosition);
+    vec3 R = reflect(-dirToCam, normal);
 
     vec3 light = CalculateLights(albedo, normal, rough, metal) + scene.ambient;
 
-    vec3 hdri = texture(texHdri, SphericalMapToUv(normalize(inNormal))).xyz;
+    // hdri diffuse
+    vec3 f0 = vec3(0.04); 
+    f0 = mix(f0, albedo, metal);
+    vec3 F = fresnelSchlickRoughness(max(dot(normal, dirToCam), 0.0), f0, rough);
+    vec3 ks = F;
+    vec3 kd = 1.0 - ks;
+    kd *= 1.0 - metal;
 
-    vec3 finalColor = light * albedo * ao;
+    vec3 irradiance = texture(texHdriDiffuse, SphericalMapToUv(normalize(normal))).xyz;
+    vec3 diffuse = irradiance * albedo;
+
+    // hdri specular
+    const float maxReflectionLod = 4.0;
+    vec3 prefilteredColor = textureLod(texHdriSpecular, SphericalMapToUv(normalize(R)), rough * maxReflectionLod).rgb;
+    vec2 envBrdf = texture(texHdriBrdf, vec2(max(dot(normal, dirToCam), 0.0), rough)).rg;
+    vec3 specular = prefilteredColor * (F * envBrdf.x + envBrdf.y);
+
+    vec3 ambient = (kd * diffuse + specular) * ao;
+
+    vec3 finalColor = light + ambient;
     outColor = vec4(finalColor, 1.0);
 }

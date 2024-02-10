@@ -17,6 +17,9 @@ void Sandbox::Shutdown()
   pbrResources.textures.albedo.Shutdown();
   pbrResources.textures.normal.Shutdown();
   pbrResources.textures.hdri.Shutdown();
+  pbrResources.textures.hdriDiffuse.Shutdown();
+  pbrResources.textures.hdriSpecular.Shutdown();
+  pbrResources.textures.hdriBrdf.Shutdown();
 
   skybox.mesh.Shutdown();
   skybox.material.Shutdown();
