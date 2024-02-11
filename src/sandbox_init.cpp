@@ -13,6 +13,7 @@ QuartzResult Sandbox::Init()
 
   // Test
   // ============================================================
+
   QTZ_ATTEMPT(testInfo.buffer.Init(sizeof(testInfo.bufferData)));
   //QTZ_ATTEMPT(testInfo.texture.Init("D:/Dev/QuartzSandbox/res/textures/AltImage.png"));
   ////QTZ_ATTEMPT(testInfo.texture.Init(1, 1, { Vec3{ 1.0f, 1.0f, 1.0f } }, Quartz::Texture_Format_RGBA8, Quartz::Texture_Usage_Framebuffer | Quartz::Texture_Usage_Shader_Input));
@@ -51,9 +52,11 @@ QuartzResult Sandbox::InitResources()
   // Object - Textures
   // ============================================================
 
+  pbrResources.textures.albedo.usage = Quartz::Texture_Usage_Shader_Input;
   //QTZ_ATTEMPT(pbrResources.textures.albedo.Init("D:/Dev/QuartzSandbox/res/textures/CyborgWeapon/Weapon_albedo.png"));
   QTZ_ATTEMPT(pbrResources.textures.albedo.Init({ Vec3{ 1.0f, 1.0f, 1.0f } }));
 
+  pbrResources.textures.normal.usage = Quartz::Texture_Usage_Shader_Input;
   //QTZ_ATTEMPT(pbrResources.textures.normal.Init("D:/Dev/QuartzSandbox/res/textures/CyborgWeapon/Weapon_normal.png"));
   //QTZ_ATTEMPT(pbrResources.textures.normal.Init("D:/Dev/QuartzSandbox/res/textures/TestNormal.png"));
   QTZ_ATTEMPT(pbrResources.textures.normal.Init({ Vec3{ 0.5f, 0.5f, 1.0f } }));
@@ -64,22 +67,20 @@ QuartzResult Sandbox::InitResources()
     uint32_t index = (y * axisCount) + x;
     float offset = (0.5f / axisCount);
     pbrResources.buffers.buffers[index].Init(sizeof(PbrBufferInfo));
+
+    pbrResources.textures.maps[index].usage = Quartz::Texture_Usage_Shader_Input;
     //QTZ_ATTEMPT(pbrResources.textures.maps[index].Init("D:/Dev/QuartzSandbox/res/textures/CyborgWeapon/Weapon_AoRoughnessMetallic.png"));
     QTZ_ATTEMPT(pbrResources.textures.maps[index].Init({ Vec3{ 1.0f, ((float)x / axisCount) + offset, ((float)y / axisCount) + offset } }));
   }
 
-  pbrResources.textures.hdri.format = Quartz::Texture_Format_RGBA32;
-  pbrResources.textures.hdri.sampleMode = Quartz::Texture_Sample_Clamp;
-  pbrResources.textures.hdri.mipLevels = 1;
-  //QTZ_ATTEMPT(pbrResources.textures.hdri.Init("D:/Dev/QuartzSandbox/res/textures/hdri/whipple_creek_regional_park_04_4k.exr"));
-  QTZ_ATTEMPT(pbrResources.textures.hdri.Init("D:/Dev/QuartzSandbox/res/textures/hdri/studio_small_08_4k.exr"));
+  Quartz::TextureSkybox sky;
+  QTZ_ATTEMPT(pbrResources.textures.sky.Init("D:/Dev/QuartzSandbox/res/textures/hdri/studio_small_08_4k.exr"));
 
-
-  Quartz::SetHdri(pbrResources.textures.hdri);
-  QTZ_ATTEMPT(Quartz::ConvolveHdri());
-  pbrResources.textures.hdriDiffuse = Quartz::GetDiffuseHdri();
-  pbrResources.textures.hdriSpecular = Quartz::GetSpecularHdri();
-  pbrResources.textures.hdriBrdf = Quartz::GetSpecularBrdf();
+  //Quartz::SetHdri(pbrResources.textures.hdri);
+  //QTZ_ATTEMPT(Quartz::ConvolveHdri());
+  //pbrResources.textures.hdriDiffuse = Quartz::GetDiffuseHdri();
+  //pbrResources.textures.hdriSpecular = Quartz::GetSpecularHdri();
+  //pbrResources.textures.hdriBrdf = Quartz::GetSpecularBrdf();
 
   // Object - Material
   // ============================================================
@@ -90,14 +91,13 @@ QuartzResult Sandbox::InitResources()
         "D:/Dev/QuartzSandbox/res/shaders/compiled/0_blank.vert.spv",
         "D:/Dev/QuartzSandbox/res/shaders/compiled/4_ibl.frag.spv" },
       {
-        { .type = Quartz::Input_Buffer,  .value = { .buffer  = &dummyBuffer                        } },
-        { .type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.albedo       } },
-        { .type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.normal       } },
-        { .type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.maps[0]      } },
-        { .type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.hdri         } },
-        { .type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.hdriDiffuse  } },
-        { .type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.hdriSpecular } },
-        { .type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.hdriBrdf     } }
+        { .type = Quartz::Input_Buffer,  .value = { .buffer  = &dummyBuffer                             } },
+        { .type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.albedo            } },
+        { .type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.normal            } },
+        { .type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.maps[0]           } },
+        { .type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.sky.GetDiffuse()  } },
+        { .type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.sky.GetSpecular() } },
+        { .type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.sky.GetBrdf()     } }
       }));
 
   // Object - Mesh
@@ -129,7 +129,7 @@ QuartzResult Sandbox::InitResources()
         "D:/Dev/QuartzSandbox/res/shaders/compiled/s_skybox.frag.spv"
       },
       {
-        { .type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.hdri } }
+        { .type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.sky.GetBase() } }
       },
       Quartz::Pipeline_Cull_Front | Quartz::Pipeline_Depth_Compare_LessEqual));
 
@@ -153,14 +153,13 @@ QuartzResult Sandbox::InitObjects()
     pbrResources.materials[i].Init(
       pbrResources.materialBase,
       {
-        { .buffer  = &pbrResources.buffers.buffers[i]    },
-        { .texture = &pbrResources.textures.albedo       },
-        { .texture = &pbrResources.textures.normal       },
-        { .texture = &pbrResources.textures.maps[i]      },
-        { .texture = &pbrResources.textures.hdri         },
-        { .texture = &pbrResources.textures.hdriDiffuse  },
-        { .texture = &pbrResources.textures.hdriSpecular },
-        { .texture = &pbrResources.textures.hdriBrdf     }
+        { .buffer  = &pbrResources.buffers.buffers[i]         },
+        { .texture = &pbrResources.textures.albedo            },
+        { .texture = &pbrResources.textures.normal            },
+        { .texture = &pbrResources.textures.maps[i]           },
+        { .texture = &pbrResources.textures.sky.GetDiffuse()  },
+        { .texture = &pbrResources.textures.sky.GetSpecular() },
+        { .texture = &pbrResources.textures.sky.GetBrdf()     }
       });
 
     pbrResources.buffers.data[i].baseReflectivity = Vec3{ 0.56f, 0.57f, 0.58f };

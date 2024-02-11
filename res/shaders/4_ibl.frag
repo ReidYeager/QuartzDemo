@@ -54,10 +54,9 @@ layout (set = 1, binding = 0) uniform MaterialStruct
 layout (set = 1, binding = 1) uniform sampler2D texAlbedo;
 layout (set = 1, binding = 2) uniform sampler2D texNormal;
 layout (set = 1, binding = 3) uniform sampler2D texMaps;
-layout (set = 1, binding = 4) uniform sampler2D texHdri;
-layout (set = 1, binding = 5) uniform sampler2D texHdriDiffuse;
-layout (set = 1, binding = 6) uniform sampler2D texHdriSpecular;
-layout (set = 1, binding = 7) uniform sampler2D texHdriBrdf;
+layout (set = 1, binding = 4) uniform sampler2D texHdriDiffuse;
+layout (set = 1, binding = 5) uniform sampler2D texHdriSpecular;
+layout (set = 1, binding = 6) uniform sampler2D texHdriBrdf;
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec2 inUv;
