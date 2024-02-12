@@ -1,3 +1,3 @@
-- [ ] Drop-down list in Ui
-- [ ] Drop-down selection sets current mesh
-- [ ] Update all renderables
+- [x] Drop-down list in Ui
+- [x] Drop-down selection sets current mesh
+- [x] Update all renderables
