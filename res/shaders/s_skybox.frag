@@ -6,6 +6,11 @@ layout(set = 0, binding = 0) uniform SceneStruct
 } scene;
 
 layout (set = 1, binding = 0) uniform sampler2D texHdri;
+layout (set = 1, binding = 1) uniform MaterialBuffer
+{
+    float gamma;
+    float exposure;
+} mat;
 
 layout(location = 0) in vec3 inNormal;
 
@@ -25,5 +30,10 @@ void main()
 {
     vec3 n = normalize(inNormal);
     vec3 c = texture(texHdri, SphericalMapToUv(n)).xyz;
-    outColor = vec4(c, 1.0);
+
+    // Tone-mapping
+    vec3 mapped = vec3(1.0) - exp(-c * mat.exposure);
+    mapped = pow(mapped, vec3(1.0 / mat.gamma));
+
+    outColor = vec4(mapped, 1.0);
 }

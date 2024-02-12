@@ -45,18 +45,17 @@ layout(set = 0, binding = 0) uniform SceneStruct
     LightGroup lights;
 } scene;
 
-layout (set = 1, binding = 0) uniform MaterialStruct
+layout (set = 1, binding = 0) uniform sampler2D texAlbedo;
+layout (set = 1, binding = 1) uniform sampler2D texNormal;
+layout (set = 1, binding = 2) uniform sampler2D texMaps;
+layout (set = 1, binding = 3) uniform sampler2D texHdriDiffuse;
+layout (set = 1, binding = 4) uniform sampler2D texHdriSpecular;
+layout (set = 1, binding = 5) uniform sampler2D texHdriBrdf;
+layout (set = 1, binding = 6) uniform MaterialBuffer
 {
-    vec3 baseReflectivity;
-    float roughness;
-    float metalness;
+    float gamma;
+    float exposure;
 } mat;
-layout (set = 1, binding = 1) uniform sampler2D texAlbedo;
-layout (set = 1, binding = 2) uniform sampler2D texNormal;
-layout (set = 1, binding = 3) uniform sampler2D texMaps;
-layout (set = 1, binding = 4) uniform sampler2D texHdriDiffuse;
-layout (set = 1, binding = 5) uniform sampler2D texHdriSpecular;
-layout (set = 1, binding = 6) uniform sampler2D texHdriBrdf;
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec2 inUv;
@@ -220,7 +219,7 @@ void main()
 {
     vec3 albedo = texture(texAlbedo, inUv).xyz;
     vec3 mats = texture(texMaps, inUv).xyz;
-    float ao = mats.x;
+    float ao = 1;
     float rough = mats.y;
     float metal = mats.z;
 
@@ -252,5 +251,9 @@ void main()
     vec3 ambient = (kd * diffuse + specular) * ao;
 
     vec3 finalColor = light + ambient;
-    outColor = vec4(finalColor, 1.0);
+
+    vec3 mapped = vec3(1.0) - exp(-finalColor * mat.exposure);
+    mapped = pow(mapped, vec3(1.0 / mat.gamma));
+
+    outColor = vec4(mapped, 1.0);
 }

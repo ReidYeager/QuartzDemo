@@ -1,8 +1,8 @@
-- [ ] Pre-process all Ibl images on startup
+- [x] Pre-process all Ibl images on startup
 	- Learning some threading for this would be useful
-- [ ] Drop-down list in Ui
-- [ ] Drop-down selection sets current Ibl
-	- [ ] Update all current material input sets
-- [ ] Ibl image preview in Ui?
-	- [ ] Selected Ibl
-	- [ ] Selection options in dropdown
+- [x] Drop-down list in Ui
+- [x] Drop-down selection sets current Ibl
+	- [x] Update all current material input sets
+- [x] Ibl image preview in Ui?
+	- [x] Selected Ibl
+	- [x] Selection options in dropdown

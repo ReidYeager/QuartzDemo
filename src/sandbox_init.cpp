@@ -3,125 +3,92 @@
 
 #include <math.h>
 
+#define UseResCyborg 1
+#define UseResHdris 1
+#define UseResShaders 1
+
 QuartzResult Sandbox::Init()
 {
   QTZ_DEBUG("Sandbox Init");
 
-  QTZ_ATTEMPT(InitResources());
-  QTZ_ATTEMPT(InitObjects());
-  QTZ_ATTEMPT(InitLights());
-
-  // Test
-  // ============================================================
-
-  QTZ_ATTEMPT(testInfo.buffer.Init(sizeof(testInfo.bufferData)));
-  //QTZ_ATTEMPT(testInfo.texture.Init("D:/Dev/QuartzSandbox/res/textures/AltImage.png"));
-  ////QTZ_ATTEMPT(testInfo.texture.Init(1, 1, { Vec3{ 1.0f, 1.0f, 1.0f } }, Quartz::Texture_Format_RGBA8, Quartz::Texture_Usage_Framebuffer | Quartz::Texture_Usage_Shader_Input));
-  //QTZ_ATTEMPT(testInfo.mesh.Init("D:/Dev/QuartzSandbox/res/models/Cube.obj"));
-  //QTZ_ATTEMPT(
-  //  testInfo.material.Init(
-  //    {
-  //      "D:/Dev/QuartzSandbox/res/shaders/compiled/0_blank.vert.spv",
-  //      "D:/Dev/QuartzSandbox/res/shaders/compiled/t_tests.frag.spv"
-  //    },
-  //    {
-  //      { .type = Quartz::Input_Buffer , .value = { .buffer  = &testInfo.buffer  } },
-  //      { .type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.hdriSpecular } }
-  //    }));
-  //Quartz::Renderable* testR = testInfo.entity.Add<Quartz::Renderable>();
-  //testR->material = &testInfo.material;
-  //testR->mesh = &testInfo.mesh;
-  //testInfo.entity.Get<Transform>()->position = Vec3{ 0.0f, 0.0f, 2.0f };
-
   // Camera
   // ============================================================
 
-  camera.Get<Transform>()->position = Vec3{ float(axisCount / 2), float(axisCount / 2), 7.0f};
+  camera.Get<Transform>()->position = Vec3{ 0.0f, 0.0f, 7.0f};
   Quartz::Camera* c = camera.Add<Quartz::Camera>();
   *c = Quartz::Camera{ .fov = 65.0f, .desiredRatio = 1.0f, .nearClip = 0.1f, .farClip = 100.0f };
   float windowRatio = (float)Quartz::WindowWidth() / (float)Quartz::WindowHeight();
   c->projectionMatrix = ProjectionPerspectiveExtended(windowRatio, c->desiredRatio, c->fov, c->nearClip, c->farClip);
 
-  return Quartz_Success;
-}
-
-QuartzResult Sandbox::InitResources()
-{
-  Quartz::Buffer dummyBuffer(1);
-
-  // Object - Textures
+  // Textures
   // ============================================================
 
-  pbrResources.textures.albedo.usage = Quartz::Texture_Usage_Shader_Input;
-  //QTZ_ATTEMPT(pbrResources.textures.albedo.Init("D:/Dev/QuartzSandbox/res/textures/CyborgWeapon/Weapon_albedo.png"));
-  QTZ_ATTEMPT(pbrResources.textures.albedo.Init({ Vec3{ 1.0f, 1.0f, 1.0f } }));
+  QTZ_ATTEMPT(pbrTextures.albedo.Init("D:/Dev/QuartzSandbox/res/textures/Cerberus/Cerberus_Albedo.png"));
+  QTZ_ATTEMPT(pbrTextures.normal.Init("D:/Dev/QuartzSandbox/res/textures/Cerberus/Cerberus_Normal.png"));
+  QTZ_ATTEMPT(pbrTextures.maps.Init  ("D:/Dev/QuartzSandbox/res/textures/Cerberus/Cerberus_AoRoughMetal.png"));
 
-  pbrResources.textures.normal.usage = Quartz::Texture_Usage_Shader_Input;
-  //QTZ_ATTEMPT(pbrResources.textures.normal.Init("D:/Dev/QuartzSandbox/res/textures/CyborgWeapon/Weapon_normal.png"));
-  //QTZ_ATTEMPT(pbrResources.textures.normal.Init("D:/Dev/QuartzSandbox/res/textures/TestNormal.png"));
-  QTZ_ATTEMPT(pbrResources.textures.normal.Init({ Vec3{ 0.5f, 0.5f, 1.0f } }));
+  const char* skyboxTexturePaths[] = {
+    "D:/Dev/QuartzSandbox/res/textures/hdri/whipple_creek_regional_park_04_4k.exr",
+    "D:/Dev/QuartzSandbox/res/textures/hdri/studio_small_08_4k.exr",
+    "D:/Dev/QuartzSandbox/res/textures/hdri/industrial_sunset_02_puresky_4k.exr",
+    "D:/Dev/QuartzSandbox/res/textures/hdri/lilienstein_4k.exr",
+    "D:/Dev/QuartzSandbox/res/textures/hdri/fireplace_4k.exr",
+    "D:/Dev/QuartzSandbox/res/textures/hdri/peppermint_powerplant_2_4k.exr",
+    "D:/Dev/QuartzSandbox/res/textures/hdri/autoshop_01_4k.exr",
+    "D:/Dev/QuartzSandbox/res/textures/hdri/artist_workshop_4k.exr",
+    "D:/Dev/QuartzSandbox/res/textures/hdri/glass_passage_4k.exr"
+  };
 
-  for (uint32_t y = 0; y < axisCount; y++)
-  for (uint32_t x = 0; x < axisCount; x++)
+  skyboxTextures.resize(sizeof(skyboxTexturePaths) / sizeof(*skyboxTexturePaths));
+
+  for (uint32_t i = 0; i < skyboxTextures.size(); i++)
   {
-    uint32_t index = (y * axisCount) + x;
-    float offset = (0.5f / axisCount);
-    pbrResources.buffers.buffers[index].Init(sizeof(PbrBufferInfo));
-
-    pbrResources.textures.maps[index].usage = Quartz::Texture_Usage_Shader_Input;
-    //QTZ_ATTEMPT(pbrResources.textures.maps[index].Init("D:/Dev/QuartzSandbox/res/textures/CyborgWeapon/Weapon_AoRoughnessMetallic.png"));
-    QTZ_ATTEMPT(pbrResources.textures.maps[index].Init({ Vec3{ 1.0f, ((float)x / axisCount) + offset, ((float)y / axisCount) + offset } }));
+    QTZ_ATTEMPT(skyboxTextures[i].Init(skyboxTexturePaths[i]));
   }
 
-  Quartz::TextureSkybox sky;
-  QTZ_ATTEMPT(pbrResources.textures.sky.Init("D:/Dev/QuartzSandbox/res/textures/hdri/studio_small_08_4k.exr"));
+  skybox.pCurrentTexture = &skyboxTextures[0];
+  QTZ_ATTEMPT(skybox.buffer.Init(sizeof(skybox.bufferData)));
+  skybox.buffer.PushData(&skybox.bufferData);
 
-  //Quartz::SetHdri(pbrResources.textures.hdri);
-  //QTZ_ATTEMPT(Quartz::ConvolveHdri());
-  //pbrResources.textures.hdriDiffuse = Quartz::GetDiffuseHdri();
-  //pbrResources.textures.hdriSpecular = Quartz::GetSpecularHdri();
-  //pbrResources.textures.hdriBrdf = Quartz::GetSpecularBrdf();
+  // Meshes
+  // ============================================================
 
-  // Object - Material
+  QTZ_ATTEMPT(object.mesh.Init("D:/Dev/QuartzSandbox/res/models/Cerberus.obj"));
+
+  std::vector<Quartz::Vertex> verts(4);
+  verts[0].position = Vec3{ -1.0f, -1.0f, 0.0f }; // TL
+  verts[1].position = Vec3{  1.0f, -1.0f, 0.0f }; // TR
+  verts[2].position = Vec3{ -1.0f,  1.0f, 0.0f }; // BL
+  verts[3].position = Vec3{  1.0f,  1.0f, 0.0f }; // BR
+
+  std::vector<uint32_t> indices = {
+    0, 1, 2,
+    2, 3, 1
+  };
+
+  QTZ_ATTEMPT(skybox.mesh.Init(verts, indices));
+
+  // Materials
   // ============================================================
 
   QTZ_ATTEMPT(
-    pbrResources.materialBase.Init(
+    object.material.Init(
       {
         "D:/Dev/QuartzSandbox/res/shaders/compiled/0_blank.vert.spv",
-        "D:/Dev/QuartzSandbox/res/shaders/compiled/4_ibl.frag.spv" },
+        "D:/Dev/QuartzSandbox/res/shaders/compiled/4_ibl.frag.spv"
+      },
       {
-        { .type = Quartz::Input_Buffer,  .value = { .buffer  = &dummyBuffer                             } },
-        { .type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.albedo            } },
-        { .type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.normal            } },
-        { .type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.maps[0]           } },
-        { .type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.sky.GetDiffuse()  } },
-        { .type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.sky.GetSpecular() } },
-        { .type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.sky.GetBrdf()     } }
-      }));
+        { .type = Quartz::Input_Texture, .value = { .texture = &pbrTextures.albedo                    } },
+        { .type = Quartz::Input_Texture, .value = { .texture = &pbrTextures.normal                    } },
+        { .type = Quartz::Input_Texture, .value = { .texture = &pbrTextures.maps                      } },
+        { .type = Quartz::Input_Texture, .value = { .texture = &skybox.pCurrentTexture->GetDiffuse()  } },
+        { .type = Quartz::Input_Texture, .value = { .texture = &skybox.pCurrentTexture->GetSpecular() } },
+        { .type = Quartz::Input_Texture, .value = { .texture = &skybox.pCurrentTexture->GetBrdf()     } },
+        {.type = Quartz::Input_Buffer , .value = {.buffer = &skybox.buffer                            } }
+      }
+    )
+  );
 
-  // Object - Mesh
-  // ============================================================
-
-  //QTZ_ATTEMPT(objectMesh.Init("D:/Dev/QuartzSandbox/res/models/Cyborg_Weapon.obj"));
-  QTZ_ATTEMPT(objectMesh.Init("D:/Dev/QuartzSandbox/res/models/SphereSmooth.obj"));
-  //QTZ_ATTEMPT(objectMesh.Init("D:/Dev/QuartzSandbox/res/models/sponza/sponza.obj"));
-  //QTZ_ATTEMPT(objectMesh.InitFromDump("D:/Dev/QuartzSandbox/res/models/sponza/sponza.dmp"));
-
-  // Skybox
-  // ============================================================
-
-  std::vector<Quartz::Vertex> screenQuadVerts(4);
-  screenQuadVerts[0].position = Vec3{ -1.0f, -1.0f, 0.0f };
-  screenQuadVerts[1].position = Vec3{  1.0f, -1.0f, 0.0f };
-  screenQuadVerts[2].position = Vec3{  1.0f,  1.0f, 0.0f };
-  screenQuadVerts[3].position = Vec3{ -1.0f,  1.0f, 0.0f };
-
-  std::vector<uint32_t> screenQuadIndices(6);
-  screenQuadIndices[0] = 0; screenQuadIndices[1] = 1; screenQuadIndices[2] = 2;
-  screenQuadIndices[3] = 2; screenQuadIndices[4] = 3; screenQuadIndices[5] = 0;
-
-  QTZ_ATTEMPT(skybox.mesh.Init(screenQuadVerts, screenQuadIndices));
   QTZ_ATTEMPT(
     skybox.material.Init(
       {
@@ -129,136 +96,27 @@ QuartzResult Sandbox::InitResources()
         "D:/Dev/QuartzSandbox/res/shaders/compiled/s_skybox.frag.spv"
       },
       {
-        { .type = Quartz::Input_Texture, .value = { .texture = &pbrResources.textures.sky.GetBase() } }
+        { .type = Quartz::Input_Texture, .value = { .texture = &skybox.pCurrentTexture->GetBase() } },
+        { .type = Quartz::Input_Buffer , .value = { .buffer  = &skybox.buffer                     } }
       },
-      Quartz::Pipeline_Cull_Front | Quartz::Pipeline_Depth_Compare_LessEqual));
+      Quartz::Pipeline_Cull_None | Quartz::Pipeline_Depth_Compare_LessEqual
+    )
+  );
 
-  dummyBuffer.Shutdown();
-  return Quartz_Success;
-}
-
-QuartzResult Sandbox::InitObjects()
-{
-  for (uint32_t i = 0; i < objectCount; i++)
-  {
-    float y = (float)(i / axisCount);
-    float x = (float)(i % axisCount);
-
-    Quartz::Entity& e = objects[i];
-
-    Transform* t = e.Get<Transform>();
-    t->position = Vec3{ x, y, 0.0f };
-    t->scale = Vec3{ 0.5f, 0.5f, 0.5f };
-
-    pbrResources.materials[i].Init(
-      pbrResources.materialBase,
-      {
-        { .buffer  = &pbrResources.buffers.buffers[i]         },
-        { .texture = &pbrResources.textures.albedo            },
-        { .texture = &pbrResources.textures.normal            },
-        { .texture = &pbrResources.textures.maps[i]           },
-        { .texture = &pbrResources.textures.sky.GetDiffuse()  },
-        { .texture = &pbrResources.textures.sky.GetSpecular() },
-        { .texture = &pbrResources.textures.sky.GetBrdf()     }
-      });
-
-    pbrResources.buffers.data[i].baseReflectivity = Vec3{ 0.56f, 0.57f, 0.58f };
-    pbrResources.buffers.data[i].roughness = (float)x / axisCount + 0.1f;
-    pbrResources.buffers.data[i].metalness = (float)y / axisCount + 0.1f;
-    pbrResources.buffers.buffers[i].PushData(&pbrResources.buffers.data[i]);
-
-    *e.Add<Quartz::Renderable>() = Quartz::Renderable{ .mesh = &objectMesh, .material = &pbrResources.materials[i] };
-  }
-
-  // Skybox
-
-  *skybox.entity.Add<Quartz::Renderable>() = Quartz::Renderable{ .mesh = &skybox.mesh, .material = &skybox.material };
-
-  return Quartz_Success;
-}
-
-QuartzResult Sandbox::InitLights()
-{
-  Quartz::Buffer dummyBuffer(1);
-
-  // Resources
+  // Entities
   // ============================================================
 
-  QTZ_ATTEMPT(lights.mesh.Init("D:/Dev/QuartzSandbox/res/models/SphereSmooth.obj"));
-  QTZ_ATTEMPT(lights.materialBase.Init(
-    { "D:/Dev/QuartzSandbox/res/shaders/compiled/0_blank.vert.spv",
-      "D:/Dev/QuartzSandbox/res/shaders/compiled/x_light.frag.spv" },
-    { {.type = Quartz::Input_Buffer, .value = { .buffer = &dummyBuffer } } }
-  ));
+  Quartz::Renderable* r;
 
-  // Directional
-  // ============================================================
+  r = object.entity.Add<Quartz::Renderable>();
+  r->material = &object.material;
+  r->mesh = &object.mesh;
 
-  lights.pointers.dir = lights.directional.Add<Quartz::LightDirectional>();
-  lights.pointers.dir->color = Vec3{ 1.0f, 1.0f, 1.0f };
-  lights.pointers.dir->intensity = 1.0f;
-  lights.pointers.dir->direction = Vec3{ 0.0f, 0.0f, -1.0f };
+  object.entity.Get<Transform>()->rotation.y = 90.0f;
 
-  // Point
-  // ============================================================
+  r = skybox.entity.Add<Quartz::Renderable>();
+  r->material = &skybox.material;
+  r->mesh = &skybox.mesh;
 
-  for (uint32_t i = 0; i < pointLightCount; i++)
-  {
-    lights.buffers[i].Init(sizeof(Vec3));
-    lights.materials[i].Init(lights.materialBase, { { .buffer = &lights.buffers[i] } });
-    *lights.points[i].Add<Quartz::Renderable>() = Quartz::Renderable{ .mesh = &lights.mesh, .material = &lights.materials[i] };
-    lights.points[i].Add<Quartz::LightPoint>();
-  }
-
-  Vec3 colors[4] = {
-    { 1.0f, 0.0f, 0.0f },
-    { 0.0f, 1.0f, 0.0f },
-    { 0.0f, 0.0f, 1.0f },
-    { 1.0f, 1.0f, 1.0f },
-  };
-
-  for (uint32_t i = 0; i < pointLightCount; i++)
-  {
-    lights.pointers.point[i] = lights.points[i].Get<Quartz::LightPoint>();
-    lights.pointers.point[i]->color = colors[i];
-    lights.pointers.point[i]->intensity = 0.0f;
-    lights.buffers[i].PushData(&lights.pointers.point[i]->color);
-
-    lights.transforms[i] = lights.points[i].Get<Transform>();
-    lights.transforms[i]->scale = Vec3{ 0.1f, 0.1f, 0.1f };
-    //lights.transforms[i]->position = Vec3{ (float)(i % 2) * 2.0f - 1.0f, (float)(i / 2) * 2.0f - 1.0f, 1.5f};
-  }
-
-  // Spot
-  // ============================================================
-
-  for (uint32_t i = 0; i < spotLightCount; i++)
-  {
-    uint32_t bulbIndex = i + pointLightCount;
-    lights.buffers[bulbIndex].Init(sizeof(Vec3));
-    lights.materials[bulbIndex].Init(lights.materialBase, { { .buffer = &lights.buffers[bulbIndex] } });
-    *lights.spots[i].Add<Quartz::Renderable>() = Quartz::Renderable{ .mesh = &lights.mesh, .material = &lights.materials[bulbIndex] };
-    lights.spots[i].Add<Quartz::LightSpot>();
-  }
-
-  for (uint32_t i = 0; i < spotLightCount; i++)
-  {
-    uint32_t bulbIndex = i + pointLightCount;
-    lights.pointers.spot[i] = lights.spots[i].Get<Quartz::LightSpot>();
-    //lights.pointers.spot[i]->color = Vec4SubtractVec4(Vec4{ 1.0f, 1.0f, 1.0f, 1.0f }, colors[i]);
-    lights.pointers.spot[i]->color = colors[i];
-    lights.pointers.spot[i]->intensity = 0.0f;
-    lights.pointers.spot[i]->direction = Vec3{ 0.0f, 0.0f, 1.0f };
-    lights.pointers.spot[i]->inner = cos(PERI_DEGREES_TO_RADIANS(5.0f * i));
-    lights.pointers.spot[i]->outer = cos(PERI_DEGREES_TO_RADIANS(10.0f * i));
-    lights.buffers[bulbIndex].PushData(&lights.pointers.spot[i]->color);
-
-    lights.transforms[bulbIndex] = lights.spots[i].Get<Transform>();
-    lights.transforms[bulbIndex]->scale = Vec3{ 0.1f, 0.1f, 0.3f };
-    //lights.transforms[bulbIndex]->position = Vec3{ (float)i * 2.0f, 4.0f, 2.0f };
-    lights.transforms[bulbIndex]->position = Vec3{ 0.0f, 0.0f, 0.0f };
-  }
-
-  dummyBuffer.Shutdown();
   return Quartz_Success;
 }

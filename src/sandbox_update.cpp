@@ -3,6 +3,20 @@
 
 QuartzResult Sandbox::Update(double deltaTime)
 {
+  static Quartz::TextureSkybox* prevSkybox = skybox.pCurrentTexture;
+  if (prevSkybox != skybox.pCurrentTexture)
+  {
+    skybox.material.SetSingleInput(0, { .texture = &skybox.pCurrentTexture->GetBase() });
+    skybox.material.UpdateInputs();
+
+    object.material.SetSingleInput(3, { .texture = &skybox.pCurrentTexture->GetDiffuse() });
+    object.material.SetSingleInput(4, { .texture = &skybox.pCurrentTexture->GetSpecular() });
+    object.material.SetSingleInput(5, { .texture = &skybox.pCurrentTexture->GetBrdf() });
+    object.material.UpdateInputs();
+
+    prevSkybox = skybox.pCurrentTexture;
+  }
+
   if (Quartz::Input::OnButtonPress(Quartz::Key_Escape))
   {
     Quartz::RequestQuit();
@@ -10,28 +24,14 @@ QuartzResult Sandbox::Update(double deltaTime)
 
   if (Quartz::Input::OnButtonPress(Quartz::Key_Space) || Quartz::Input::OnButtonPress(Quartz::Mouse_Middle))
   {
-    pbrResources.materialBase.Reload();
-    skybox.material.Reload();
+    QTZ_ATTEMPT(object.material.Reload());
+    QTZ_ATTEMPT(skybox.material.Reload());
   }
 
   // Camera
   // ============================================================
 
   QTZ_ATTEMPT(UpdateCamera());
-
-  // Update spotlight transforms
-  // ============================================================
-
-  //Transform* camTrans = camera.Get<Transform>();
-  //Quaternion rot = Quaternion(camTrans->rotation);
-
-  //for (uint32_t i = 0; i < spotLightCount; i++)
-  //{
-  //  Transform* t = lights.spots[i].Get<Transform>();
-  //  t->position = camTrans->position;
-
-  //  lights.spots[i].Get<Quartz::LightSpot>()->direction = rot * Vec3{ 0.0f, 0.0f, 1.0f };
-  //}
 
   return Quartz_Success;
 }

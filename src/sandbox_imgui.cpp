@@ -3,84 +3,38 @@
 
 void Sandbox::RenderImgui()
 {
+  static uint32_t selectedIndex = 1;
+
   ImGui::Begin("Sandbox");
 
-  // Directional
-  // ============================================================
+  ImGui::DragFloat("Gamma", &skybox.bufferData.gamma, 0.001f);
+  ImGui::DragFloat("Exposure", &skybox.bufferData.exposure, 0.001f);
+  skybox.buffer.PushData(&skybox.bufferData);
 
-  ImGui::SeparatorText("Directional light");
-  ImGui::PushID("DirectionalLight");
-
-  Quartz::LightDirectional* ptr = lights.pointers.dir;
-  ImGui::DragFloat3("Color", (float*)&ptr->color, 0.001f);
-  ImGui::DragFloat("Intensity", &ptr->intensity, 0.001f);
-  ImGui::DragFloat3("Direction", (float*)&ptr->direction, 0.001f);
-  ptr->direction.Normalize();
-
-  ImGui::PopID();
-
-  // Point
-  // ============================================================
-
-  ImGui::SeparatorText("Point lights");
-  ImGui::PushID("PointLights");
-  for (uint32_t i = 0; i < 1; i++)
+  if (ImGui::ImageButton(skybox.pCurrentTexture->ForImgui(), { 128, 64 }))
   {
-    Quartz::LightPoint* ptr = lights.pointers.point[i];
-    ImGui::PushID(i);
-
-    char buffer[2];
-    sprintf(buffer, "%u", i);
-    ImGui::SeparatorText(buffer);
-
-    ImGui::DragFloat3("Color", (float*)&ptr->color, 0.001f);
-    ImGui::DragFloat("Intensity", &ptr->intensity, 0.001f);
-    ImGui::DragFloat3("Position", (float*)&lights.transforms[i]->position, 0.01f);
-
-    ptr->position = lights.transforms[i]->position;
-    lights.buffers[i].PushData(&ptr->color);
-
-    ImGui::PopID();
+    ImGui::OpenPopup("imageSelectPopup");
   }
-  ImGui::PopID();
+  ImGui::SameLine();
 
-  // Spot
-  // ============================================================
+  if (ImGui::BeginPopup("imageSelectPopup"))
+  {
+    for (uint32_t i = 0; i < skyboxTextures.size(); i++)
+    {
+      if (i % 2)
+      {
+        ImGui::SameLine();
+      }
 
-  //ImGui::SeparatorText("Spot lights");
-  //ImGui::PushID("SpotLights");
-  //for (uint32_t i = 0; i < spotLightCount; i++)
-  //{
-  //  uint32_t bulbIndex = i + pointLightCount;
-  //  Quartz::LightSpot* ptr = lights.pointers.spot[i];
-  //  ImGui::PushID(i);
+      if (ImGui::ImageButton(skyboxTextures[i].ForImgui(), { 128, 64 }))
+      {
+        skybox.pCurrentTexture = &skyboxTextures[i];
+        ImGui::CloseCurrentPopup();
+      }
+    }
 
-  //  char buffer[2];
-  //  sprintf(buffer, "%u", i);
-  //  ImGui::SeparatorText(buffer);
-
-  //  ImGui::DragFloat3("Color", (float*)&ptr->color, 0.001f);
-  //  ImGui::DragFloat("Intensity", &ptr->intensity, 0.001f);
-  //  ImGui::DragFloat3("Position", (float*)&lights.transforms[bulbIndex]->position, 0.01f);
-  //  ImGui::DragFloat3("Direction", (float*)&ptr->direction, 0.01f);
-  //  ImGui::DragFloat("Inner", &ptr->inner, 0.001f);
-  //  ImGui::DragFloat("Outer", &ptr->outer, 0.001f);
-
-  //  ptr->position = lights.transforms[bulbIndex]->position;
-  //  lights.buffers[bulbIndex].PushData(&ptr->color);
-
-  //  ImGui::PopID();
-  //}
-  //ImGui::PopID();
-
-  // Test
-  // ============================================================
-
-  ImGui::SeparatorText("Test");
-  ImGui::PushID("Test");
-  ImGui::DragFloat("lod", &testInfo.bufferData.lod, 0.01f);
-  ImGui::PopID();
-  testInfo.buffer.PushData(&testInfo.bufferData);
+    ImGui::EndPopup();
+  }
 
   ImGui::End();
 }
