@@ -29,7 +29,7 @@ vec2 SphericalMapToUv(vec3 vector)
 void main()
 {
     vec3 n = normalize(inNormal);
-    vec3 c = texture(texHdri, SphericalMapToUv(n)).xyz;
+    vec3 c = textureLod(texHdri, SphericalMapToUv(n), 0).xyz;
 
     // Tone-mapping
     vec3 mapped = vec3(1.0) - exp(-c * mat.exposure);

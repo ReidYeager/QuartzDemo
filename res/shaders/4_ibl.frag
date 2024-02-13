@@ -185,7 +185,7 @@ vec3 SpotLight(int index, vec3 albedo, vec3 normal, float rough, float metal)
     float distToLight = length(dirToLight);
     dirToLight = normalize(dirToLight);
 
-    float theta = dot(dirToLight, normalize(pl.direction));
+    float theta = dot(-dirToLight, normalize(pl.direction));
     float radiusFalloff = (theta - pl.cosOuter) / (pl.cosInner - pl.cosOuter);
     radiusFalloff = min(max(radiusFalloff, 0.0), 1.0);
     float attenuation = min(radiusFalloff / (distToLight * distToLight), 1.0);

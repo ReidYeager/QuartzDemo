@@ -52,6 +52,11 @@ QuartzResult Sandbox::Update(double deltaTime)
     prevMaps = object.pCurrentMaps;
   }
 
+  if (ImGui::GetIO().WantCaptureMouse || ImGui::GetIO().WantCaptureKeyboard)
+  {
+    return Quartz_Success;
+  }
+
   if (Quartz::Input::OnButtonPress(Quartz::Key_Escape))
   {
     Quartz::RequestQuit();
@@ -98,7 +103,7 @@ void Sandbox::UpdateCameraFly()
   {
     speed *= speedShiftMultiplier;
   }
-  if (Quartz::Input::ButtonStatus(Quartz::Key_Alt_L))
+  if (Quartz::Input::ButtonStatus(Quartz::Key_Ctrl_L))
   {
     speed *= speedAltMultiplier;
   }

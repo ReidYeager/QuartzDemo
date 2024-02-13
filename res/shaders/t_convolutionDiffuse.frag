@@ -36,7 +36,7 @@ void main()
     vec3 up = normalize(cross(normal, right));
 
     const float pi = 3.14159;
-    const float angleDelta = 0.0125; // Radians
+    const float angleDelta = 0.00625; // Radians
     int sampleCount = 0;
 
     vec3 irradiance = vec3(0.0);

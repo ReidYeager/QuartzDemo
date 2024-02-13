@@ -11,6 +11,9 @@ QuartzResult Sandbox::Init()
 {
   QTZ_DEBUG("Sandbox Init");
 
+  Quartz::Buffer dummyBuffer;
+  dummyBuffer.Init(1);
+
   // Camera
   // ============================================================
 
@@ -55,15 +58,15 @@ QuartzResult Sandbox::Init()
   // Skyboxes ==============================
 
   const char* skyboxTexturePaths[] = {
-    SANDBOX_RES_DIR "textures/hdri/whipple_creek_regional_park_04_4k.exr",
-    SANDBOX_RES_DIR "textures/hdri/studio_small_08_4k.exr",
+    //SANDBOX_RES_DIR "textures/hdri/whipple_creek_regional_park_04_4k.exr",
+    //SANDBOX_RES_DIR "textures/hdri/studio_small_08_4k.exr",
     //SANDBOX_RES_DIR "textures/hdri/industrial_sunset_02_puresky_4k.exr",
     //SANDBOX_RES_DIR "textures/hdri/lilienstein_4k.exr",
     //SANDBOX_RES_DIR "textures/hdri/fireplace_4k.exr",
     //SANDBOX_RES_DIR "textures/hdri/peppermint_powerplant_2_4k.exr",
     //SANDBOX_RES_DIR "textures/hdri/autoshop_01_4k.exr",
-    //SANDBOX_RES_DIR "textures/hdri/artist_workshop_4k.exr",
-    //SANDBOX_RES_DIR "textures/hdri/glass_passage_4k.exr"
+    SANDBOX_RES_DIR "textures/hdri/artist_workshop_4k.exr",
+    SANDBOX_RES_DIR "textures/hdri/glass_passage_4k.exr"
   };
 
   skyboxTextures.resize(sizeof(skyboxTexturePaths) / sizeof(*skyboxTexturePaths));
@@ -154,5 +157,133 @@ QuartzResult Sandbox::Init()
   r->material = &skybox.material;
   r->mesh = &skybox.mesh;
 
+  // Lights
+  // ============================================================
+
+  // Resources ==============================
+
+  QTZ_ATTEMPT(m_lightResources.pointMesh.Init(SANDBOX_RES_DIR "models/SphereSmooth.obj"));
+  QTZ_ATTEMPT(m_lightResources.spotMesh.Init(SANDBOX_RES_DIR "models/SpotlightCone.obj"));
+  QTZ_ATTEMPT(
+    m_lightResources.materialBase.Init(
+      {
+        SANDBOX_RES_DIR "shaders/compiled/0_blank.vert.spv",
+        SANDBOX_RES_DIR "shaders/compiled/x_light.frag.spv"
+      },
+      {
+        { .type = Quartz::Input_Buffer, .value = { .buffer = &dummyBuffer } }
+      }
+    )
+  );
+
+  // Directional ==============================
+
+  m_directional.entity.Add<Quartz::LightDirectional>();
+  m_directional.light = m_directional.entity.Get<Quartz::LightDirectional>();
+  m_directional.light->color = Vec3{ 1.0f, 1.0f, 1.0f };
+  m_directional.light->direction = Vec3{ 0.0f, -1.0f, 0.0f };
+  m_directional.light->intensity = 1.0f;
+  m_directional.entity.Disable();
+  m_directional.enabled = false;
+
+  // Points ==============================
+
+  Vec3 pointColors[4] = {
+    Vec3{ 1.0f, 0.0f, 0.0f },
+    Vec3{ 0.0f, 1.0f, 0.0f },
+    Vec3{ 0.0f, 0.0f, 1.0f },
+    Vec3{ 0.0f, 1.0f, 1.0f }
+  };
+
+  // Add all components
+  for (uint32_t i = 0; i < m_pointCount; i++)
+  {
+    SandboxPointLight& p = m_points[i];
+
+    QTZ_ATTEMPT(p.buffer.Init(sizeof(Vec3)));
+
+    QTZ_ATTEMPT(
+      p.materialInstance.Init(
+        m_lightResources.materialBase,
+        {
+          { .buffer = &p.buffer }
+        }
+      )
+    );
+
+    Quartz::Renderable* r = p.entity.Add<Quartz::Renderable>();
+    r->mesh = &m_lightResources.pointMesh;
+    r->material = &p.materialInstance;
+
+    Quartz::LightPoint* light = p.entity.Add<Quartz::LightPoint>();
+    light->color = pointColors[i];
+    light->intensity = 1.0f;
+    light->position = Vec3{ 0.0f, 0.0f, 0.0f };
+
+    QTZ_ATTEMPT(p.buffer.PushData(&light->color));
+
+    p.entity.Disable();
+    p.enabled = false;
+  }
+
+  // Get final component pointers
+  for (uint32_t i = 0; i < m_pointCount; i++)
+  {
+    SandboxPointLight& p = m_points[i];
+    p.transform = p.entity.Get<Transform>();
+    p.light = p.entity.Get<Quartz::LightPoint>();
+
+    p.transform->scale *= 0.04f;
+  }
+
+  // Spots ==============================
+
+  for (uint32_t i = 0; i < m_spotCount; i++)
+  {
+    SandboxSpotLight& s = m_spots[i];
+
+    QTZ_ATTEMPT(s.buffer.Init(sizeof(Vec3)));
+
+    QTZ_ATTEMPT(
+      s.materialInstance.Init(
+        m_lightResources.materialBase,
+        {
+          { .buffer = &s.buffer }
+        }
+      )
+    );
+
+    Quartz::Renderable* r = s.entity.Add<Quartz::Renderable>();
+    r->mesh = &m_lightResources.spotMesh;
+    r->material = &s.materialInstance;
+
+    Quartz::LightSpot* light = s.entity.Add<Quartz::LightSpot>();
+    light->color = pointColors[3 - i];
+    light->intensity = 1.0f;
+    light->inner = 0.0f;
+    light->position = Vec3{ 0.0f, 0.0f, 0.0f };
+    light->direction = Vec3{ 0.0f, 0.0f, -1.0f };
+    light->inner = cos(PERI_DEGREES_TO_RADIANS(s.innerDegrees));
+    light->outer = cos(PERI_DEGREES_TO_RADIANS(s.outerDegrees));
+
+    QTZ_ATTEMPT(s.buffer.PushData(&light->color));
+
+    s.entity.Disable();
+    s.enabled = false;
+  }
+
+  for (uint32_t i = 0; i < m_spotCount; i++)
+  {
+    SandboxSpotLight& s = m_spots[i];
+    s.transform = s.entity.Get<Transform>();
+    s.light = s.entity.Get<Quartz::LightSpot>();
+
+    s.transform->scale *= 0.04f;
+  }
+
+  // Shutdown
+  // ============================================================
+
+  dummyBuffer.Shutdown();
   return Quartz_Success;
 }

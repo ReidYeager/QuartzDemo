@@ -76,6 +76,61 @@ private:
   float speedShiftMultiplier = 2.0f;
   float speedAltMultiplier = 0.5f;
 
+  // Lights
+  // ============================================================
+
+  struct
+  {
+    Quartz::Material materialBase;
+    Quartz::Mesh pointMesh;
+    Quartz::Mesh spotMesh;
+  } m_lightResources;
+
+  // Directional ==============================
+
+  struct
+  {
+    bool enabled = false;
+    Quartz::Entity entity;
+    Quartz::LightDirectional* light;
+  } m_directional;
+
+  // Point ==============================
+
+  struct SandboxPointLight
+  {
+    bool enabled = false;
+    Quartz::Entity entity;
+    Quartz::Buffer buffer;
+    Quartz::Material materialInstance;
+
+    Quartz::LightPoint* light;
+    Transform* transform;
+  };
+  const uint32_t m_pointCount = 4;
+  SandboxPointLight m_points[4];
+
+  // Spot ==============================
+
+  struct SandboxSpotLight
+  {
+    bool enabled = false;
+    bool lockedToCamera = false;
+
+    Quartz::Entity entity;
+    Quartz::Buffer buffer;
+    Quartz::Material materialInstance;
+
+    float innerDegrees = 5.0f;
+    float outerDegrees = 8.0f;
+
+    Quartz::LightSpot* light;
+    Transform* transform;
+  };
+  const uint32_t m_spotCount = 2;
+  SandboxSpotLight m_spots[2];
+
+
   // Declarations
   // ============================================================
 public:
@@ -89,6 +144,14 @@ public:
 private:
   void UpdateCameraOrbit();
   void UpdateCameraFly();
+
+  void ImguiCamera();
+  void ImguiSkybox();
+  void ImguiObjectModel();
+  void ImguiObjectTextures();
+  void ImguiDirectionalLight();
+  void ImguiPointLights();
+  void ImguiSpotLights();
 
   FILE* outDumpFile;
   bool StartDump();
