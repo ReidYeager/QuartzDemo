@@ -3,10 +3,6 @@
 
 #include <math.h>
 
-#define UseResCyborg 1
-#define UseResHdris 1
-#define UseResShaders 1
-
 QuartzResult Sandbox::Init()
 {
   QTZ_DEBUG("Sandbox Init");
@@ -28,8 +24,13 @@ QuartzResult Sandbox::Init()
 
   // Albedo ==============================
 
+#ifdef QTZ_CONFIG_DEBUG
   QTZ_ATTEMPT(pbrTextures.albedos[0].Init(SANDBOX_RES_DIR "textures/Cerberus/Cerberus_Albedo.png"));
   QTZ_ATTEMPT(pbrTextures.albedos[1].Init(SANDBOX_RES_DIR "textures/AltImage.png"));
+#else
+  QTZ_ATTEMPT(pbrTextures.albedos[0].InitFromDump(SANDBOX_RES_DIR "textures/Cerberus_Albedo.dmp"));
+  QTZ_ATTEMPT(pbrTextures.albedos[1].InitFromDump(SANDBOX_RES_DIR "textures/AltImage.dmp"));
+#endif // QTZ_CONFIG_DEBUG
 
   uint32_t customAlbedoIndex = pbrTextures.albedoCount - 1;
   pbrTextures.albedos[customAlbedoIndex].extents = Vec2U{ 1, 1 };
@@ -39,15 +40,25 @@ QuartzResult Sandbox::Init()
 
   // Normal ==============================
 
+#ifdef QTZ_CONFIG_DEBUG
   QTZ_ATTEMPT(pbrTextures.normals[0].Init(SANDBOX_RES_DIR "textures/Cerberus/Cerberus_Normal.png"));
   QTZ_ATTEMPT(pbrTextures.normals[1].Init(SANDBOX_RES_DIR "textures/TestNormal.png"));
   QTZ_ATTEMPT(pbrTextures.normals[2].Init(SANDBOX_RES_DIR "textures/EmptyNormal.png"));
+#else
+  QTZ_ATTEMPT(pbrTextures.normals[0].InitFromDump(SANDBOX_RES_DIR "textures/Cerberus_Normal.dmp"));
+  QTZ_ATTEMPT(pbrTextures.normals[1].InitFromDump(SANDBOX_RES_DIR "textures/TestNormal.dmp"));
+  QTZ_ATTEMPT(pbrTextures.normals[2].InitFromDump(SANDBOX_RES_DIR "textures/EmptyNormal.dmp"));
+#endif
 
   object.pCurrentNormal = &pbrTextures.normals[0];
 
   // Maps ==============================
 
+#ifdef QTZ_CONFIG_DEBUG
   QTZ_ATTEMPT(pbrTextures.maps[0].Init(SANDBOX_RES_DIR "textures/Cerberus/Cerberus_AoRoughMetal.png"));
+#else
+  QTZ_ATTEMPT(pbrTextures.maps[0].InitFromDump(SANDBOX_RES_DIR "textures/Cerberus_AoRoughMetal.dmp"));
+#endif
 
   uint32_t customMapIndex = pbrTextures.mapCount - 1;
   pbrTextures.maps[customMapIndex].extents = Vec2U{ 1, 1 };
@@ -58,8 +69,9 @@ QuartzResult Sandbox::Init()
   // Skyboxes ==============================
 
   const char* skyboxTexturePaths[] = {
-    //SANDBOX_RES_DIR "textures/hdri/whipple_creek_regional_park_04_4k.exr",
-    //SANDBOX_RES_DIR "textures/hdri/studio_small_08_4k.exr",
+#ifdef QTZ_CONFIG_DEBUG
+    SANDBOX_RES_DIR "textures/hdri/studio_small_08_4k.exr",
+    SANDBOX_RES_DIR "textures/hdri/whipple_creek_regional_park_04_4k.exr",
     //SANDBOX_RES_DIR "textures/hdri/industrial_sunset_02_puresky_4k.exr",
     //SANDBOX_RES_DIR "textures/hdri/lilienstein_4k.exr",
     //SANDBOX_RES_DIR "textures/hdri/fireplace_4k.exr",
@@ -67,12 +79,23 @@ QuartzResult Sandbox::Init()
     //SANDBOX_RES_DIR "textures/hdri/autoshop_01_4k.exr",
     SANDBOX_RES_DIR "textures/hdri/artist_workshop_4k.exr",
     SANDBOX_RES_DIR "textures/hdri/glass_passage_4k.exr"
+#else
+    SANDBOX_RES_DIR "textures/hdri/studio_small_08_4k.dmp",
+    SANDBOX_RES_DIR "textures/hdri/whipple_creek_regional_park_04_4k.dmp",
+    SANDBOX_RES_DIR "textures/hdri/artist_workshop_4k.dmp",
+    SANDBOX_RES_DIR "textures/hdri/glass_passage_4k.dmp"
+#endif
   };
 
   skyboxTextures.resize(sizeof(skyboxTexturePaths) / sizeof(*skyboxTexturePaths));
+
   for (uint32_t i = 0; i < skyboxTextures.size(); i++)
   {
+#ifdef QTZ_CONFIG_DEBUG
     QTZ_ATTEMPT(skyboxTextures[i].Init(skyboxTexturePaths[i]));
+#else
+    QTZ_ATTEMPT(skyboxTextures[i].InitFromDump(skyboxTexturePaths[i]));
+#endif // QTZ_CONFIG_DEBUG
   }
 
   skybox.pCurrentTexture = &skyboxTextures[0];
@@ -83,15 +106,26 @@ QuartzResult Sandbox::Init()
   // ============================================================
 
   const char* objectMeshPaths[] = {
+#ifdef QTZ_CONFIG_DEBUG
     SANDBOX_RES_DIR "models/Cerberus.obj",
     SANDBOX_RES_DIR "models/SphereSmooth.obj",
-    SANDBOX_RES_DIR "models/Cube.obj",
+    SANDBOX_RES_DIR "models/Cube.obj"
+#else
+    SANDBOX_RES_DIR "models/Cerberus.dmp",
+    SANDBOX_RES_DIR "models/SphereSmooth.dmp",
+    SANDBOX_RES_DIR "models/Cube.dmp"
+#endif
   };
 
   object.meshes.resize(sizeof(objectMeshPaths) / sizeof(*objectMeshPaths));
   for (uint32_t i = 0; i < object.meshes.size(); i++)
   {
+#ifdef QTZ_CONFIG_DEBUG
     QTZ_ATTEMPT(object.meshes[i].Init(objectMeshPaths[i]));
+#else
+    QTZ_ATTEMPT(object.meshes[i].InitFromDump(objectMeshPaths[i]));
+#endif // QTZ_CONFIG_DEBUG
+
   }
 
   std::vector<Quartz::Vertex> verts(4);
@@ -162,8 +196,14 @@ QuartzResult Sandbox::Init()
 
   // Resources ==============================
 
+#ifdef QTZ_CONFIG_DEBUG
   QTZ_ATTEMPT(m_lightResources.pointMesh.Init(SANDBOX_RES_DIR "models/SphereSmooth.obj"));
   QTZ_ATTEMPT(m_lightResources.spotMesh.Init(SANDBOX_RES_DIR "models/SpotlightCone.obj"));
+#else
+  QTZ_ATTEMPT(m_lightResources.pointMesh.InitFromDump(SANDBOX_RES_DIR "models/SphereSmooth.dmp"));
+  QTZ_ATTEMPT(m_lightResources.spotMesh.InitFromDump(SANDBOX_RES_DIR "models/SpotlightCone.dmp"));
+#endif
+
   QTZ_ATTEMPT(
     m_lightResources.materialBase.Init(
       {
@@ -280,6 +320,38 @@ QuartzResult Sandbox::Init()
 
     s.transform->scale *= 0.04f;
   }
+
+  // Dump
+  // ============================================================
+
+#ifdef QTZ_CONFIG_DEBUG
+
+  // Textures
+
+  DumpTexture("textures/Cerberus_Albedo.dmp", pbrTextures.albedos[0]);
+  DumpTexture("textures/AltImage.dmp", pbrTextures.albedos[1]);
+
+  DumpTexture("textures/Cerberus_Normal.dmp", pbrTextures.normals[0]);
+  DumpTexture("textures/TestNormal.dmp", pbrTextures.normals[1]);
+  DumpTexture("textures/EmptyNormal.dmp", pbrTextures.normals[2]);
+
+  DumpTexture("textures/Cerberus_AoRoughMetal.dmp", pbrTextures.maps[0]);
+
+  DumpTexture("textures/hdri/studio_small_08_4k.dmp", skyboxTextures[0].GetBase());
+  DumpTexture("textures/hdri/whipple_creek_regional_park_04_4k.dmp", skyboxTextures[1].GetBase());
+  DumpTexture("textures/hdri/artist_workshop_4k.dmp", skyboxTextures[2].GetBase());
+  DumpTexture("textures/hdri/glass_passage_4k.dmp", skyboxTextures[3].GetBase());
+
+  // Meshes
+
+  DumpMesh("models/Cerberus.dmp", object.meshes[0]);
+  DumpMesh("models/SphereSmooth.dmp", object.meshes[1]);
+  DumpMesh("models/Cube.dmp", object.meshes[2]);
+
+  DumpMesh("models/SpotlightCone.dmp", m_lightResources.spotMesh);
+
+#endif // QTZ_CONFIG_DEBUG
+
 
   // Shutdown
   // ============================================================

@@ -52,7 +52,7 @@ QuartzResult Sandbox::Update(double deltaTime)
     prevMaps = object.pCurrentMaps;
   }
 
-  if (ImGui::GetIO().WantCaptureMouse || ImGui::GetIO().WantCaptureKeyboard)
+  if (ImGui::GetIO().WantCaptureMouse)
   {
     return Quartz_Success;
   }

@@ -27,3 +27,9 @@ target_link_libraries(Sandbox
   Quartz
   VendorSandbox
 )
+
+if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+  target_compile_definitions(Sandbox PUBLIC SANDBOX_RES_DIR="${PROJECT_SOURCE_DIR}/res/")
+elseif (${CMAKE_BUILD_TYPE} STREQUAL "Release")
+  target_compile_definitions(Sandbox PUBLIC SANDBOX_RES_DIR="./data/")
+endif()

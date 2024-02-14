@@ -6,12 +6,6 @@
 #include <stdlib.h>
 #include <vector>
 
-#ifdef QTZ_DEBUG
-#define SANDBOX_RES_DIR "D:/Dev/QuartzSandbox/res/"
-#else
-#define SANDBOX_RES_DIR "./"
-#endif
-
 class Sandbox : public Quartz::Application
 {
 private:
@@ -153,12 +147,7 @@ private:
   void ImguiPointLights();
   void ImguiSpotLights();
 
-  FILE* outDumpFile;
-  bool StartDump();
-  void DumpTexture(const char* name, const Quartz::Texture& texture);
-  void DumpFile(const char* name, const char* path);
-  void DumpByteArray(const char* name, uint64_t byteCount, void* bytes);
-  void DumpText(const char* string);
-  void EndDump();
+  void DumpTexture(const char* resourceRelativePath, const Quartz::Texture& texture);
+  void DumpMesh(const char* resourceRelativePath, const Quartz::Mesh& mesh);
 
 };
