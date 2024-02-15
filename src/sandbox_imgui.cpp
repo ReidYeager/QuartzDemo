@@ -311,6 +311,7 @@ void Sandbox::ImguiPointLights()
       ImGui::DragFloat3("Position", p.transform->position.elements, 0.001f);
 
       p.light->position = p.transform->position;
+      p.buffer.PushData(&p.light->color);
     }
 
     ImGui::EndChild();
@@ -383,6 +384,7 @@ void Sandbox::ImguiSpotLights()
 
       s.light->position = s.transform->position;
       s.light->direction = Quaternion(s.transform->rotation) * Vec3 { 0.0f, 0.0f, -1.0f };
+      s.buffer.PushData(&s.light->color);
     }
 
     ImGui::EndChild();

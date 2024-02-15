@@ -1,4 +1,4 @@
-- [ ] View textures
+- [x] View textures
 	- Will likely need to implement some sort of resource manager for this
-- [ ] Select textures
-- [ ] Create/modify single-pixel textures for simple colors
+- [x] Select textures
+- [x] Create/modify single-pixel textures for simple colors
