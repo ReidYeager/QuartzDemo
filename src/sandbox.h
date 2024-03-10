@@ -147,7 +147,7 @@ private:
   void ImguiPointLights();
   void ImguiSpotLights();
 
-  void DumpTexture(const char* resourceRelativePath, const Quartz::Texture& texture);
-  void DumpMesh(const char* resourceRelativePath, const Quartz::Mesh& mesh);
+  //void DumpTexture(const char* resourceRelativePath, const Quartz::Texture& texture);
+  //void DumpMesh(const char* resourceRelativePath, const Quartz::Mesh& mesh);
 
 };

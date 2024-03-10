@@ -1,18 +1,31 @@
-# Cherno things to look at
-- [Logging](https://www.youtube.com/watch?v=dZr-53LAlOw&list=PLlrATfBNZ98dC-V-N3m0Go4deliWHPFwT&index=7)
-	- Uses a library called [spdlog](https://github.com/gabime/spdlog)
-- [Event system](https://www.youtube.com/watch?v=xnopUoZbMEk&list=PLlrATfBNZ98dC-V-N3m0Go4deliWHPFwT&index=10)
-	- Frame to pass data about some pre-defined event types
-- [Polling events](https://www.youtube.com/watch?v=yuhNj8yGDJQ&list=PLlrATfBNZ98dC-V-N3m0Go4deliWHPFwT&index=19)
-	- Part of the event/input system 
-	- Checking if the event is true outside of the event dispatch
-- [Layers](https://www.youtube.com/watch?v=_Kj6BSfM6P4&list=PLlrATfBNZ98dC-V-N3m0Go4deliWHPFwT&index=14)
-	- Method to order, enable/disable isolated things that happen in the main loop
-	- Can allow control how other things work
-		- ex: consume input events so they don't get passed down to other layers
-- [Imgui events](https://www.youtube.com/watch?v=yBP1gSbQPPM&list=PLlrATfBNZ98dC-V-N3m0Go4deliWHPFwT&index=16)
-	- Manually set the event values for Imgui
-	- Removes the need for imgui to tap into the window's events directly
-- [Rendering architecture](https://www.youtube.com/watch?v=YPWNNmlIUIo&list=PLlrATfBNZ98dC-V-N3m0Go4deliWHPFwT&index=24)
-	- Deciding what to abstract away from the graphics api's
-- DLL hot-swap
+# Flow
+## Init
+- client `Quartz::Run()`
+- Window
+	- > Required for the renderer to initialize
+- Renderer
+	- Backend api
+- Object pools
+- Ecs
+- Layers
+	- > Non-client
+- Client layer
+- Clocks
+
+## Update
+
+# Layer stack
+- > Stack top
+- Debug ui (Imgui)
+	- > Including the client's
+- Ui
+- Debug meshes
+	- > Once implemented
+	- Gizmos
+- Input handling
+	- > Translating inputs into `Quartz::Input` and events
+- Client
+
+# Long term
+- Load the client as a hot-swappable dll
+

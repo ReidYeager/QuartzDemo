@@ -13,7 +13,7 @@ QuartzResult Sandbox::Init()
   // Camera
   // ============================================================
 
-  camera.Get<Transform>()->position = Vec3{ 0.0f, 0.0f, 2.0f};
+  camera.Get<Transform>()->position = Vec3{ 0.0f, 0.0f, 2.0f };
   Quartz::Camera* c = camera.Add<Quartz::Camera>();
   *c = Quartz::Camera{ .fov = 65.0f, .desiredRatio = 1.0f, .nearClip = 0.1f, .farClip = 100.0f };
   float windowRatio = (float)Quartz::WindowWidth() / (float)Quartz::WindowHeight();
@@ -130,9 +130,9 @@ QuartzResult Sandbox::Init()
 
   std::vector<Quartz::Vertex> verts(4);
   verts[0].position = Vec3{ -1.0f, -1.0f, 0.0f }; // TL
-  verts[1].position = Vec3{  1.0f, -1.0f, 0.0f }; // TR
+  verts[1].position = Vec3{ 1.0f, -1.0f, 0.0f }; // TR
   verts[2].position = Vec3{ -1.0f,  1.0f, 0.0f }; // BL
-  verts[3].position = Vec3{  1.0f,  1.0f, 0.0f }; // BR
+  verts[3].position = Vec3{ 1.0f,  1.0f, 0.0f }; // BR
 
   std::vector<uint32_t> indices = {
     0, 1, 2,
@@ -320,38 +320,6 @@ QuartzResult Sandbox::Init()
 
     s.transform->scale *= 0.04f;
   }
-
-  // Dump
-  // ============================================================
-
-#ifdef QTZ_CONFIG_DEBUG
-
-  // Textures
-
-  DumpTexture("textures/Cerberus_Albedo.dmp", pbrTextures.albedos[0]);
-  DumpTexture("textures/AltImage.dmp", pbrTextures.albedos[1]);
-
-  DumpTexture("textures/Cerberus_Normal.dmp", pbrTextures.normals[0]);
-  DumpTexture("textures/TestNormal.dmp", pbrTextures.normals[1]);
-  DumpTexture("textures/EmptyNormal.dmp", pbrTextures.normals[2]);
-
-  DumpTexture("textures/Cerberus_AoRoughMetal.dmp", pbrTextures.maps[0]);
-
-  DumpTexture("textures/hdri/studio_small_08_4k.dmp", skyboxTextures[0].GetBase());
-  DumpTexture("textures/hdri/whipple_creek_regional_park_04_4k.dmp", skyboxTextures[1].GetBase());
-  DumpTexture("textures/hdri/artist_workshop_4k.dmp", skyboxTextures[2].GetBase());
-  DumpTexture("textures/hdri/glass_passage_4k.dmp", skyboxTextures[3].GetBase());
-
-  // Meshes
-
-  DumpMesh("models/Cerberus.dmp", object.meshes[0]);
-  DumpMesh("models/SphereSmooth.dmp", object.meshes[1]);
-  DumpMesh("models/Cube.dmp", object.meshes[2]);
-
-  DumpMesh("models/SpotlightCone.dmp", m_lightResources.spotMesh);
-
-#endif // QTZ_CONFIG_DEBUG
-
 
   // Shutdown
   // ============================================================

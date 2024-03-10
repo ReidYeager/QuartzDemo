@@ -16,7 +16,6 @@ void Sandbox::RenderImgui()
   ImguiObjectModel();
   ImguiObjectTextures();
 
-
   ImGui::SeparatorText("Lights");
 
   ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
